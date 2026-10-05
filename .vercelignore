@@ -1,0 +1,6 @@
+# never publish internal documents or local tooling
+/*.docx
+/*.doc
+/*.pdf
+.claude
+*.csv

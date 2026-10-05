@@ -1,0 +1,8 @@
+.vercel
+.claude
+# internal source documents (the published versions live in assets/docs)
+/*.docx
+/*.doc
+/*.pdf
+.DS_Store
+Thumbs.db
