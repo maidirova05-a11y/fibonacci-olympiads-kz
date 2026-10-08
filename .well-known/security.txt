@@ -1,0 +1,4 @@
+Contact: mailto:info@az-group.kz
+Expires: 2027-10-01T00:00:00.000Z
+Preferred-Languages: ru, kk, en
+Canonical: https://fibonacci-olympiads.kz/.well-known/security.txt
