@@ -11,11 +11,12 @@ const YM_ID=113420424;
   })(window,document,'script','https://mc.yandex.ru/metrika/tag.js?id='+YM_ID,'ym');
   ym(YM_ID,'init',{ssr:true,webvisor:true,clickmap:true,ecommerce:'dataLayer',referrer:document.referrer,url:location.href,accurateTrackBounce:true,trackLinks:true});
   // goals: what visitors actually do on the page (add them in Metrica as "JavaScript event" goals)
-  const goal=n=>ym(YM_ID,'reachGoal',n);
+  const goal=window.ymGoal=n=>ym(YM_ID,'reachGoal',n);
   document.addEventListener('click',e=>{
     const a=e.target.closest('a,button');if(!a)return;
     const href=a.getAttribute('href')||'';
-    if(a.matches('[data-reg]'))goal('register_click');
+    if(a.matches('[data-lead]'))goal('lead_open');
+    else if(a.matches('[data-reg]'))goal('register_click');
     else if(a.matches('[data-wa]'))goal('whatsapp_click');
     else if(a.matches('[data-pay]'))goal('kaspi_click');
     else if(a.matches('[data-soc]'))goal(a.dataset.soc+'_click');

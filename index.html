@@ -404,6 +404,37 @@ html.lock .wa{opacity:0;pointer-events:none;transform:translateY(24px)}
 .wa.mini .wa-t{display:none}
 @media (max-width:680px){.wa{right:12px;bottom:12px;gap:10px;padding:6px 16px 6px 6px}.wa-ic{width:40px;height:40px}.wa-ic svg{width:22px;height:22px}.wa-t b{font-size:13.5px}.wa-t small{font-size:11px}}
 
+/* ---------- consultation request (→ Bitrix24 via /api/lead) ---------- */
+.lead-fab{border:0;cursor:pointer;background:var(--red);color:#fff;box-shadow:0 14px 34px -10px rgba(225,0,27,.75)}
+.lead-fab:hover{background:var(--red-dk);box-shadow:0 18px 40px -10px rgba(225,0,27,.9)}
+.lead-fab .wa-ic svg{fill:none;stroke:#fff}
+.lead-fab .wa-ic::after{animation-name:leadPulse}
+@keyframes leadPulse{0%{box-shadow:0 0 0 0 rgba(225,0,27,.55)}70%,100%{box-shadow:0 0 0 18px rgba(225,0,27,0)}}
+.lead{margin:auto;width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:36px 30px 28px;border:0;border-top:6px solid var(--red);border-radius:var(--r);background:var(--paper);color:var(--ink);box-shadow:0 40px 90px -20px rgba(0,0,0,.45)}
+.lead::backdrop{background:rgba(14,14,14,.6);backdrop-filter:blur(4px)}
+.lead[open]{animation:leadIn .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes leadIn{from{opacity:0;transform:translateY(24px) scale(.98)}}
+.lead h3{margin-top:12px;font-size:26px}
+.lead-p{margin:10px 0 18px;color:var(--muted);font-size:15px;line-height:1.5}
+.lead form{display:flex;flex-direction:column;gap:14px}
+.lead label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;color:var(--muted)}
+.lead input,.lead textarea{width:100%;padding:13px 15px;border-radius:12px;border:1px solid var(--line);background:var(--paper-2);color:var(--ink);font:inherit;font-size:16px;resize:vertical;transition:border-color .2s,background .2s}
+.lead input:focus,.lead textarea:focus{outline:none;border-color:var(--red);background:#fff}
+.lead input[aria-invalid=true]{border-color:var(--red)}
+.lead .btn{justify-content:center;margin-top:4px}
+.lead .btn[disabled]{opacity:.6;cursor:wait}
+.lead .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.lead-err{color:var(--red);font-size:14px;font-weight:700}
+.lead-note{font-size:12px;color:var(--muted);text-align:center}
+.lead-wa{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:800;color:#128C4A}
+.lead-wa svg{width:18px;height:18px;fill:currentColor}
+.lead-wa:hover{text-decoration:underline}
+.lead-x{position:absolute;top:12px;right:14px;width:36px;height:36px;border:0;border-radius:50%;background:none;font-size:26px;line-height:1;color:var(--muted);cursor:pointer}
+.lead-x:hover{color:var(--ink);background:var(--paper-2)}
+.lead form[hidden],.lead-ok[hidden]{display:none}
+.lead-ok{text-align:center;display:flex;flex-direction:column;align-items:center}
+.lead-ok-ic{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:var(--red);color:#fff;font-size:30px;font-weight:800}
+
 .offer-note{display:block;position:relative;z-index:1;margin-top:16px;font-size:13px;line-height:1.5;opacity:.7}
 .offer-note a,.offer-link{color:inherit;text-decoration:underline;text-underline-offset:3px}
 
@@ -826,10 +857,33 @@ summary{padding:18px 0}
   </div>
 </footer>
 
-<a class="wa" data-wa href="https://wa.me/77770888844" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
-  <span class="wa-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></span>
-  <span class="wa-t"><b data-i="wa.label">Получить консультацию</b><small data-i="wa.sub">в WhatsApp</small></span>
-</a>
+<button type="button" class="wa lead-fab" data-lead aria-haspopup="dialog">
+  <span class="wa-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12Z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M8.5 10.5h7M8.5 14h4.5"/></svg></span>
+  <span class="wa-t"><b data-i="lead.btn">Получить консультацию</b><small data-i="lead.sub">оставить заявку</small></span>
+</button>
+
+<dialog class="lead" id="lead" aria-labelledby="leadH">
+  <button type="button" class="lead-x" data-close aria-label="Close">&times;</button>
+  <form id="leadForm" novalidate>
+    <span class="eye" data-i="lead.eye">Консультация</span>
+    <h3 id="leadH" data-i="lead.h">Получить <em>консультацию</em></h3>
+    <p class="lead-p" data-i="lead.p">Оставьте контакты — менеджер перезвонит и ответит на все вопросы об олимпиаде.</p>
+    <label><span data-i="lead.name">Ваше имя</span><input name="name" autocomplete="name" maxlength="100" required></label>
+    <label><span data-i="lead.phone">Телефон</span><input name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="32" placeholder="+7 (___) ___-__-__" required></label>
+    <label><span data-i="lead.q">Вопрос (необязательно)</span><textarea name="question" rows="3" maxlength="1000"></textarea></label>
+    <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <p class="lead-err" id="leadErr" role="alert" hidden></p>
+    <button type="submit" class="btn btn-red"><span data-i="lead.send">Отправить заявку</span><svg><use href="#i-arrow"/></svg></button>
+    <small class="lead-note" data-i="lead.note">Нажимая кнопку, вы соглашаетесь на обработку персональных данных.</small>
+    <a class="lead-wa" data-wa href="https://wa.me/77770888844" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg><span data-i="lead.wa">или напишите нам в WhatsApp</span></a>
+  </form>
+  <div class="lead-ok" id="leadOk" hidden>
+    <div class="lead-ok-ic" aria-hidden="true">✓</div>
+    <h3 data-i="lead.ok.h">Заявка <em>отправлена</em></h3>
+    <p class="lead-p" data-i="lead.ok.p">Спасибо! Менеджер свяжется с вами в ближайшее рабочее время.</p>
+    <button type="button" class="btn btn-ink" data-close data-i="lead.ok.btn">Закрыть</button>
+  </div>
+</dialog>
 
 <script src="/assets/vendor/gsap.min.js" defer></script>
 <script src="/assets/vendor/ScrollTrigger.min.js" defer></script>
