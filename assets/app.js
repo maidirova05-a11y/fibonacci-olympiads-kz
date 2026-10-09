@@ -92,6 +92,7 @@ const T={
 "fin.h":["Тізбектегі келесі сан — <em>сенің нәтижең</em>","The next number in the sequence is <em>your result</em>"],
 "fin.p":["Республикалық кезеңге тіркеліп, әлемдік финалға жолыңды баста.","Register for the national round and start your journey to the World Final."],
 "foot.rep":["Қазақстан Республикасындағы ресми өкіл — AZ GROUP LLC, Астана қ.","Official representative in the Republic of Kazakhstan — AZ GROUP LLC, Astana"],
+"lead.btn":["Кеңес алу","Get a consultation"],"lead.sub":["өтінім қалдыру","leave a request"],"lead.eye":["Кеңес","Consultation"],"lead.h":["<em>Кеңес</em> алу","Get a <em>consultation</em>"],"lead.p":["Байланыс деректеріңізді қалдырыңыз — менеджер қайта қоңырау шалып, олимпиада туралы барлық сұрақтарға жауап береді.","Leave your contacts — a manager will call you back and answer all your questions about the olympiad."],"lead.name":["Атыңыз","Your name"],"lead.phone":["Телефон","Phone"],"lead.q":["Сұрақ (міндетті емес)","Question (optional)"],"lead.send":["Өтінім жіберу","Send request"],"lead.note":["Батырманы басу арқылы сіз дербес деректерді өңдеуге келісесіз.","By pressing the button you agree to the processing of your personal data."],"lead.wa":["немесе WhatsApp-қа жазыңыз","or message us on WhatsApp"],"lead.ok.h":["Өтінім <em>жіберілді</em>","Request <em>sent</em>"],"lead.ok.p":["Рахмет! Менеджер жақын арадағы жұмыс уақытында сізбен байланысады.","Thank you! A manager will contact you during working hours shortly."],"lead.ok.btn":["Жабу","Close"],
 "foot.photo":["Фото: Unsplash","Photos: Unsplash"]
 };
 const RU={};
@@ -299,4 +300,55 @@ onLang(document.documentElement.lang||'ru');
   const w=document.querySelector('.wa');if(!w)return;
   const f=()=>w.classList.toggle('mini',innerWidth<=680&&scrollY<innerHeight*.6);
   f();addEventListener('scroll',f,{passive:true});addEventListener('resize',f);
+})();
+
+/* ================= consultation request → Bitrix24 (/api/lead) ================= */
+(function(){
+  const dlg=document.getElementById('lead'),form=document.getElementById('leadForm');
+  if(!dlg||!form||typeof dlg.showModal!=='function')return;
+  const ok=document.getElementById('leadOk'),err=document.getElementById('leadErr'),send=form.querySelector('[type=submit]');
+  const MSG={
+    ru:{name:'Укажите имя',phone:'Укажите номер телефона полностью',fail:'Не удалось отправить заявку. Попробуйте ещё раз или напишите нам в WhatsApp.'},
+    kk:{name:'Атыңызды жазыңыз',phone:'Телефон нөмірін толық жазыңыз',fail:'Өтінім жіберілмеді. Қайталап көріңіз немесе WhatsApp-қа жазыңыз.'},
+    en:{name:'Please enter your name',phone:'Please enter your full phone number',fail:'Could not send the request. Please try again or message us on WhatsApp.'}
+  };
+  const m=()=>MSG[document.documentElement.lang]||MSG.ru;
+  // UTM tags of the visit, so the lead in Bitrix shows where the visitor came from
+  const utm={};
+  try{
+    const q=new URLSearchParams(location.search);
+    ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(k=>{const v=q.get(k);if(v)utm[k]=v});
+    if(Object.keys(utm).length)sessionStorage.setItem('atl-utm',JSON.stringify(utm));
+    else Object.assign(utm,JSON.parse(sessionStorage.getItem('atl-utm')||'{}'));
+  }catch(e){}
+  const showErr=t=>{err.textContent=t;err.hidden=!t};
+  document.addEventListener('click',e=>{
+    if(e.target.closest('[data-lead]')){
+      form.hidden=false;ok.hidden=true;showErr('');
+      dlg.showModal();
+    }else if(e.target.closest('[data-close]'))dlg.close();
+    else if(e.target===dlg){
+      // a click on the dimmed backdrop (outside the box) closes the form
+      const r=dlg.getBoundingClientRect();
+      if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dlg.close();
+    }
+  });
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const f=form.elements,name=f.name.value.trim(),phone=f.phone.value.trim(),digits=phone.replace(/\D/g,'');
+    f.name.setAttribute('aria-invalid',!name);
+    f.phone.setAttribute('aria-invalid',digits.length<10||digits.length>15);
+    if(!name){showErr(m().name);f.name.focus();return}
+    if(digits.length<10||digits.length>15){showErr(m().phone);f.phone.focus();return}
+    showErr('');send.disabled=true;
+    try{
+      const r=await fetch('/api/lead',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name,phone,question:f.question.value.trim(),website:f.website.value,lang:document.documentElement.lang,page:location.href,...utm})});
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok||!d.ok)throw new Error(d.error||r.status);
+      form.reset();form.hidden=true;ok.hidden=false;
+      if(window.ymGoal)ymGoal('lead_sent');
+    }catch(x){showErr(m().fail)}
+    finally{send.disabled=false}
+  });
 })();
