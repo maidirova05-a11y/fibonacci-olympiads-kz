@@ -287,7 +287,7 @@ const floatNums=(function(){
 function countAll(){document.querySelectorAll('[data-count]').forEach(el=>el.textContent=el.dataset.count)}
 
 /* ================= WhatsApp consultation ================= */
-const WA_PHONE='77770888844';
+const WA_PHONE='77717001401';
 const WA_MSG={
   ru:'Здравствуйте! Хочу получить консультацию по олимпиаде Fibonacci.',
   kk:'Сәлеметсіз бе! Fibonacci олимпиадасы бойынша кеңес алғым келеді.',
