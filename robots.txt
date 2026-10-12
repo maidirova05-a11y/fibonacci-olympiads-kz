@@ -1,4 +1,11 @@
 User-agent: *
 Allow: /
+Disallow: /api/
+
+# Yandex: ignore ad-tracking parameters so UTM links don't create duplicate pages
+User-agent: Yandex
+Allow: /
+Disallow: /api/
+Clean-param: utm_source&utm_medium&utm_campaign&utm_content&utm_term&yclid&gclid&fbclid
 
 Sitemap: https://fibonacci-olympiads.kz/sitemap.xml
