@@ -20,6 +20,7 @@ const YM_ID=113420424;
     else if(a.matches('[data-wa]'))goal('whatsapp_click');
     else if(a.matches('[data-pay]'))goal('kaspi_click');
     else if(a.matches('[data-soc]'))goal(a.dataset.soc+'_click');
+    else if(a.matches('[data-trial]'))goal('trial_tasks_open');
     else if(a.matches('[data-dl]'))goal('regulations_pdf_'+a.dataset.dl);
     else if(href==='/oferta')goal('offer_open');
     else if(href==='/polozhenie')goal('regulations_open');
