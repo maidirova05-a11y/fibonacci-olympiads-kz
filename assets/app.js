@@ -21,6 +21,7 @@ const T={
 "hero.tag":["3–11(12) сынып оқушыларына арналған халықаралық математика олимпиадасы · 30+ ел","International mathematics olympiad for grades 3–11(12) · 30+ countries"],
 "hero.cta":["Қатыс","Take part"],"nav.doc":["Ереже","Regulations"],"doc.t":["Олимпиада туралы ереже","Olympiad regulations"],"doc.s":["Ресми құжат · 2026–2027 маусымы","Official document · 2026–2027 season"],"trial.t":["Сынақ тапсырмалар","Practice tasks"],"trial.s":["Дайындыққа арналған материалдар · Google Диск","Preparation materials · Google Drive"],"pay.btn":["Kaspi арқылы төлеу","Pay via Kaspi"],"pay.link":["Kaspi-де төлеу","Pay in Kaspi"],"foot.offer":["Қоғамдық ұсыныс","Public offer"],"price.offer":["Қатысуды төлеу арқылы сіз <a href=\"/oferta\">қоғамдық ұсыныс</a> талаптарын қабылдайсыз.","By paying for participation you accept the terms of the <a href=\"/oferta\">public offer</a>."],"wa.label":["Кеңес алу","Get a consultation"],"wa.sub":["WhatsApp арқылы","on WhatsApp"],"hero.rep":["Қазақстандағы ресми өкіл","Official representative in Kazakhstan"],"hero.scroll":["Төмен","Scroll"],"hero.skip":["Өткізіп жіберу","Skip"],
 "mq.1":["Логика","Logic"],"mq.2":["Дәлдік","Precision"],"mq.3":["Әлемдік финал","World Final"],"mq.4":["Түркия","Türkiye"],"mq.5":["Италия","Italy"],"mq.6":["30+ ел","30+ countries"],"mq.7":["Халықаралық дипломдар","International diplomas"],
+"vid.t":["Бейнені көру","Watch the video"],"vid.s":["30 секунд · дыбыспен","30 seconds · with sound"],
 "about.badge":["ел жыл сайын Fibonacci олимпиадасын өткізеді","countries host the Fibonacci olympiad every year"],
 "about.eye":["Олимпиада туралы","About"],
 "about.h":["Әлемдік деңгейдегі олимпиада — <em>Қазақстанда үшінші жыл</em>","A world-class olympiad — <em>in Kazakhstan for the third year</em>"],
@@ -125,6 +126,15 @@ document.querySelectorAll('.lang button').forEach(b=>b.addEventListener('click',
   let l=new URLSearchParams(location.search).get('lang');
   if(!l){try{l=localStorage.getItem('fib-lang')}catch(e){}}
   if(l&&l!=='ru')setLang(l);
+})();
+
+/* ================= promo video ================= */
+(function(){
+  const box=document.querySelector('.vid');if(!box)return;
+  const v=box.querySelector('video');
+  box.querySelector('.vid-play').addEventListener('click',()=>{box.classList.add('on');v.controls=true;v.play().catch(()=>{})});
+  // stop the sound when the video scrolls out of view
+  new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting&&!v.paused)v.pause()}),{threshold:.2}).observe(v);
 })();
 
 /* ================= nav ================= */
@@ -260,6 +270,18 @@ const floatNums=(function(){
   ScrollTrigger.batch('[data-r]',{start:'top 88%',once:true,
     onEnter:b=>gsap.fromTo(b,{autoAlpha:0,y:46},{autoAlpha:1,y:0,duration:1,stagger:.09,ease:'power3.out',overwrite:true})});
   gsap.set('[data-r]',{autoAlpha:0});
+  // arriving from a subpage menu link like /#format: skip the intro and land on that section
+  const target=location.hash&&document.getElementById(location.hash.slice(1));
+  if(target){
+    skip();target.scrollIntoView();ScrollTrigger.refresh();
+    // a jump straight past a reveal's start doesn't fire its onEnter — show everything above the fold by hand
+    ScrollTrigger.getAll().forEach(st=>{
+      const el=st.trigger;
+      if(el&&el.hasAttribute&&el.hasAttribute('data-r')&&el.getBoundingClientRect().top<innerHeight*.88){
+        st.kill();gsap.fromTo(el,{autoAlpha:0,y:46},{autoAlpha:1,y:0,duration:1,ease:'power3.out',overwrite:true});
+      }
+    });
+  }
 
   document.querySelectorAll('[data-clip]').forEach(el=>{
     gsap.fromTo(el,{clipPath:'inset(16% 10% 16% 10% round 18px)'},{clipPath:'inset(0% 0% 0% 0% round 18px)',ease:'power2.out',scrollTrigger:{trigger:el,start:'top 90%',end:'top 35%',scrub:1}});

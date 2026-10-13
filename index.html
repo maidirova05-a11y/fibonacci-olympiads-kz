@@ -675,9 +675,9 @@ html.lock .wa{opacity:0;pointer-events:none;transform:translateY(24px)}
 .lead-fab .wa-ic svg{fill:none;stroke:#fff}
 .lead-fab .wa-ic::after{animation-name:leadPulse}
 @keyframes leadPulse{0%{box-shadow:0 0 0 0 rgba(225,0,27,.55)}70%,100%{box-shadow:0 0 0 18px rgba(225,0,27,0)}}
-.lead{margin:auto;width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:36px 30px 28px;border:0;border-top:6px solid var(--red);border-radius:var(--r);background:var(--paper);color:var(--ink);box-shadow:0 40px 90px -20px rgba(0,0,0,.45)}
-.lead::backdrop{background:rgba(14,14,14,.6);backdrop-filter:blur(4px)}
-.lead[open]{animation:leadIn .35s cubic-bezier(.2,.8,.2,1)}
+dialog.lead{margin:auto;width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:36px 30px 28px;border:0;border-top:6px solid var(--red);border-radius:var(--r);background:var(--paper);color:var(--ink);box-shadow:0 40px 90px -20px rgba(0,0,0,.45)}
+dialog.lead::backdrop{background:rgba(14,14,14,.6);backdrop-filter:blur(4px)}
+dialog.lead[open]{animation:leadIn .35s cubic-bezier(.2,.8,.2,1)}
 @keyframes leadIn{from{opacity:0;transform:translateY(24px) scale(.98)}}
 .lead h3{margin-top:12px;font-size:26px}
 .lead-p{margin:10px 0 18px;color:var(--muted);font-size:15px;line-height:1.5}
@@ -807,6 +807,47 @@ summary{padding:18px 0}
   .links.open{display:flex;position:fixed;top:76px;left:0;right:0;flex-direction:column;gap:22px;padding:28px 24px;background:#fff;border-bottom:1.5px solid var(--line);font-size:20px}
 }
 @media (max-width:680px){.links.open{top:66px}}
+
+/* ---------- promo video ---------- */
+.vid{position:relative;width:min(100%,340px);aspect-ratio:9/16;border-radius:var(--r);overflow:hidden;background:var(--ink);box-shadow:18px 18px 0 var(--red)}
+.vid video{display:block;width:100%;height:100%;object-fit:cover}
+.vid-play{position:absolute;inset:0;display:flex;align-items:flex-end;gap:14px;padding:22px;border:0;cursor:pointer;text-align:left;color:#fff;font:inherit;background:linear-gradient(180deg,rgba(14,14,14,0) 45%,rgba(14,14,14,.85))}
+.vid-play .pi{flex:none;width:58px;height:58px;border-radius:50%;background:var(--red);color:#fff;display:grid;place-items:center;animation:vpulse 2.4s infinite;transition:scale .25s}
+.vid-play:hover .pi{scale:1.08}
+.vid-play .pi svg{width:24px;height:24px;margin-left:3px}
+.vid-play b{display:block;font-family:var(--slab);font-weight:800;font-size:18px}
+.vid-play small{display:block;margin-top:3px;font-size:13px;color:rgba(255,255,255,.78)}
+.vid.on .vid-play{display:none}
+@keyframes vpulse{0%{box-shadow:0 0 0 0 rgba(225,0,27,.55)}70%{box-shadow:0 0 0 16px rgba(225,0,27,0)}100%{box-shadow:0 0 0 0 rgba(225,0,27,0)}}
+@media (max-width:680px){.vid{box-shadow:10px 10px 0 var(--red)}}
+
+/* ---------- WhatsApp: separate round button above the consultation button ---------- */
+.wa-fab{position:fixed;right:20px;bottom:96px;z-index:80;width:62px;height:62px;border-radius:50%;background:#25D366;display:grid;place-items:center;box-shadow:0 14px 34px -10px rgba(37,211,102,.75);transition:transform .25s,opacity .5s,box-shadow .25s}
+.wa-fab:hover{transform:translateY(-3px);box-shadow:0 18px 40px -10px rgba(37,211,102,.9)}
+.wa-fab svg{width:32px;height:32px;fill:#fff}
+.wa-fab::after{content:"";position:absolute;inset:0;border-radius:50%;animation:waPulse 2.2s infinite}
+html.lock .wa-fab{opacity:0;pointer-events:none;transform:translateY(24px)}
+@media (max-width:680px){.wa-fab{right:12px;bottom:76px;width:52px;height:52px}.wa-fab svg{width:27px;height:27px}}
+
+/* ---------- tighter rhythm: a section fits the screen when jumped to from the menu ---------- */
+body{cursor:default}
+input,textarea{cursor:text}
+html{scroll-padding-top:40px}
+section{padding:64px 0}
+.head{margin-bottom:32px}
+.f-top{margin-bottom:32px}
+.podium{margin-bottom:36px}
+.tl-wrap{margin-top:44px}
+.faq-grid{margin-top:56px}
+.final .in{padding:80px 20px}
+.about-r .vid{margin:0 auto}
+@media (max-width:680px){
+  section{padding:44px 0}
+  .head{margin-bottom:22px}
+  .tl-wrap{margin-top:30px}
+  .faq-grid{margin-top:36px}
+  .final .in{padding:56px 16px}
+}
 </style>
 <script src="/assets/boot.js"></script>
 <!-- Google tag (gtag.js) — config in /assets/gtag.js -->
@@ -898,9 +939,9 @@ summary{padding:18px 0}
           <a class="doc-card" href="/polozhenie" data-r><span class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></span><span><b data-i="doc.t">Положение об олимпиаде</b><small data-i="doc.s">Официальный документ · сезон 2026–2027</small></span><span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
           <a class="doc-card" href="https://drive.google.com/drive/folders/1jUwRKC1BMRF9mxQRTn2nctV7tyhyI7fN?usp=sharing" target="_blank" rel="noopener noreferrer" data-trial data-r><span class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6a1 1 0 0 1 1 1v1H8V4a1 1 0 0 1 1-1z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M8.5 12.5l2 2 4-4M8 18h8"/></svg></span><span><b data-i="trial.t">Пробные задания</b><small data-i="trial.s">Материалы для подготовки · Google Диск</small></span><span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
         </div>
-        <div class="ph-wrap" data-r>
-          <div class="ph" data-clip><img data-par src="https://images.unsplash.com/photo-1596495578065-6e0763fa1178?auto=format&fit=crop&w=1400&q=75" alt="Олимпиада по математике для школьников" loading="lazy" decoding="async"></div>
-          <div class="ph-badge"><strong>30+</strong><span data-i="about.badge">стран проводят олимпиаду Fibonacci каждый год</span></div>
+        <div class="vid" data-r>
+          <video id="promo" src="/assets/video/fibonacci-promo.mp4" poster="/assets/video/fibonacci-promo.webp" preload="none" playsinline width="720" height="1280"></video>
+          <button class="vid-play" type="button"><span class="pi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span><span><b data-i="vid.t">Смотреть видео</b><small data-i="vid.s">30 секунд · со звуком</small></span></button>
         </div>
       </div>
     </div>
@@ -1134,6 +1175,7 @@ summary{padding:18px 0}
   </div>
 </footer>
 
+<a class="wa-fab" data-wa href="https://wa.me/77717001401" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></a>
 <button type="button" class="wa lead-fab" data-lead aria-haspopup="dialog">
   <span class="wa-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12Z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M8.5 10.5h7M8.5 14h4.5"/></svg></span>
   <span class="wa-t"><b data-i="lead.btn">Получить консультацию</b><small data-i="lead.sub">оставить заявку</small></span>
