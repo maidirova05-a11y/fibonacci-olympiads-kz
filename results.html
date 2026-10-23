@@ -130,14 +130,14 @@ body{cursor:default}
 <div class="reg-head">
 <p class="upd">2026–2027</p>
 <h1 data-ui="title">Результаты олимпиады</h1>
-<p class="sub" data-ui="sub">Введите данные участника, указанные при регистрации. На почту придёт код подтверждения — после него откроются результаты.</p>
+<p class="sub" data-ui="sub">Введите данные участника так же, как в форме регистрации. На почту придёт код подтверждения — после него откроются результаты.</p>
 </div>
 
 <div class="card">
 <form class="f" id="step1" novalidate>
   <label><span data-ui="fio">ФИО участника</span><input name="fio" autocomplete="name" maxlength="150" required><span class="hint" data-ui="fio_h">Как при регистрации, например: Иванов Иван Иванович</span></label>
   <label><span data-ui="iin">ИИН участника</span><input name="iin" inputmode="numeric" autocomplete="off" maxlength="12" pattern="\d{12}" required></label>
-  <label><span data-ui="phone">Телефон</span><input name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="32" placeholder="+7 7__ ___ __ __" required></label>
+  <label><span data-ui="phone">Телефон</span><input name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="32" placeholder="+7 7__ ___ __ __" required><span class="hint" data-ui="phone_h">Номер, указанный при регистрации</span></label>
   <label><span data-ui="email">Электронная почта</span><input name="email" type="email" autocomplete="email" maxlength="120" required><span class="hint" data-ui="email_h">Та же почта, что при регистрации — на неё придёт код</span></label>
   <div class="hp" aria-hidden="true"><input name="website" tabindex="-1" autocomplete="off"></div>
   <p class="err" role="alert" hidden></p>

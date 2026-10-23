@@ -15,24 +15,24 @@ Static site (HTML/CSS/JS, no build step), hosted on Vercel.
 
 ## Results (`/results`)
 
-The participant enters ФИО, ИИН, phone and email → a 6-digit code is emailed → after the code the page shows their rows from the results table. No database: the code check uses an HMAC-signed token.
+The participant enters ФИО, ИИН, phone and email. They are checked against the answers of the registration Google Form (`REG_URL`), then a 6-digit code is emailed, and after the code the page shows the participant's rows from the results tab. No database: the code check uses an HMAC-signed token.
 
-Results table (Google Sheet), first row is headers:
+One spreadsheet, two tabs:
+1. **Form answers** — Google Form → Responses → «Link to Sheets». Leave it as the first tab and don't rename the questions' columns. Columns are found by the question text: ИИН / ЖСН, ФИО / Фамилия, имя / Аты-жөні, почта / email, телефон / WhatsApp. The participant's ФИО and ИИН win over a parent's or teacher's («ФИО родителя», «ФИО учителя» are skipped). Every email and phone column of the row counts; a filled email and phone must match what is typed (phone: last 10 digits, so +7 / 8 / spaces don't matter). Name: surname + name in any order, patronymic optional.
+2. **Результаты** — added by the organisers after the olympiad:
 
-| ИИН | ФИО | Email | Телефон | Класс | Этап | Баллы | Место | Диплом | _комментарий |
-|---|---|---|---|---|---|---|---|---|---|
+| ИИН | ФИО | Класс | Этап | Баллы | Место | Диплом | _комментарий |
+|---|---|---|---|---|---|---|---|
 
-- Required: `ИИН` and `ФИО` (or `Фамилия` + `Имя` [+ `Отчество`]). Kazakh/English headers also work (`ЖСН`, `Аты-жөні`, `IIN`, `Full name`…).
-- `Email`: if filled, the participant must enter the same address (case doesn't matter) — otherwise anyone who knows a ИИН and name could get the results. Leave it filled.
-- Every other column is shown to the participant as is (`Класс`, `Баллы`, `Место`, `Диплом`…), except `Телефон`, `ИИН`, `Email` and columns starting with `_`. An `https://…` value (a diploma or certificate link) becomes an «Открыть» link.
-- Several rows with one ИИН (several stages) are all shown. Name check: surname + name in any order, patronymic optional.
-- Changes in the sheet show up within a minute.
+   Only `ИИН` is required. Every other column is shown as is, except ФИО, email, phone and columns starting with `_`. An `https://…` value (a diploma or certificate link) becomes an «Открыть» link. Several rows with one ИИН (several stages) are all shown. A registered participant without a results row sees «результаты ещё не опубликованы».
+
+Changes in the sheet show up within a minute.
 
 Vercel env vars:
 - `RESULTS_SECRET` — random string, 24+ chars (`openssl rand -base64 32`)
 - `RESEND_API_KEY`, `RESULTS_MAIL_FROM` — email via [resend.com](https://resend.com): add the domain fibonacci-olympiads.kz there (DNS records), then e.g. `Fibonacci Olympiad <results@fibonacci-olympiads.kz>`
-- The sheet, private (recommended): create a Google Cloud service account, enable the Google Sheets API, put its JSON key in `GOOGLE_SERVICE_ACCOUNT_JSON`, share the sheet with the service account's email (Viewer), set `RESULTS_SHEET_ID` (from `…/spreadsheets/d/<id>/edit`); optional `RESULTS_SHEET_RANGE` = sheet name (default: the first sheet)
-- or simpler: `RESULTS_CSV_URL` = File → Share → Publish to web → CSV. Anyone who gets this link sees the whole table with ИИН, so keep it secret.
+- The spreadsheet, private (recommended): create a Google Cloud service account, enable the Google Sheets API, put its JSON key in `GOOGLE_SERVICE_ACCOUNT_JSON`, share the spreadsheet with the service account's email (Viewer), set `REG_SHEET_ID` (from `…/spreadsheets/d/<id>/edit`). Optional: `REG_SHEET_RANGE` (form answers tab, default the first tab), `RESULTS_SHEET_ID` (if results are in another spreadsheet), `RESULTS_SHEET_RANGE` (default `Результаты`)
+- or simpler: `REG_CSV_URL` and `RESULTS_CSV_URL` = File → Share → Publish to web → the tab → CSV. Anyone who gets these links sees the tabs with ИИН, so keep them secret.
 - Rate limits (recommended): connect Upstash Redis from the Vercel Marketplace — it sets `KV_REST_API_URL` / `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`). Then: 5 wrong codes per request, 5 codes per ИИН and 30 per IP per hour. Without it the page works but code guessing isn't limited.
 
 Deploy: `vercel deploy --prod`

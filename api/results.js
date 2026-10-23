@@ -1,22 +1,29 @@
 /* Olympiad results lookup (/results page).
-   1) action "send":   participant enters ФИО, ИИН, phone, email → the row is found in the results
-                       table, a 6-digit code is emailed, and the page gets a signed token (the code is not in it).
+   1) action "send":   participant enters ФИО, ИИН, phone, email → they are checked against the
+                       registration form answers (Google Form → Sheet), the ИИН is looked up in the
+                       results sheet, a 6-digit code is emailed and the page gets a signed token
+                       (the code is not in it).
    2) action "verify": token + code → the participant's results.
    No database: the token is HMAC-signed, so the server only needs the secret.
    Env vars (Vercel):
      RESULTS_SECRET               long random string for signing tokens                       (required)
      RESEND_API_KEY               https://resend.com API key, domain verified there            (required)
      RESULTS_MAIL_FROM            e.g. "Fibonacci Olympiad <results@fibonacci-olympiads.kz>"   (required)
-     Results table — one of:
-     GOOGLE_SERVICE_ACCOUNT_JSON  service account key (JSON); share the sheet with its email   (recommended, sheet stays private)
-     RESULTS_SHEET_ID             spreadsheet id from …/spreadsheets/d/<id>/edit
-     RESULTS_SHEET_RANGE          sheet name or range, default: the first sheet                (optional)
-     RESULTS_CSV_URL              or a "Publish to web → CSV" link (anyone with the link sees the whole table)
+     Sheets, read with a Google service account (share the spreadsheet with its email, Viewer):
+     GOOGLE_SERVICE_ACCOUNT_JSON  service account key (JSON)
+     REG_SHEET_ID                 spreadsheet with the registration form answers (…/spreadsheets/d/<id>/edit)
+     REG_SHEET_RANGE              its tab, default: the first tab (where the form writes)       (optional)
+     RESULTS_SHEET_ID             spreadsheet with results, default: REG_SHEET_ID               (optional)
+     RESULTS_SHEET_RANGE          its tab, default: "Результаты"                               (optional)
+     or instead of a service account, "Publish to web → CSV" links (anyone with a link sees that tab):
+     REG_CSV_URL, RESULTS_CSV_URL
      Rate limits (optional, recommended): Upstash Redis / Vercel KV
      KV_REST_API_URL + KV_REST_API_TOKEN  (or UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN)
-   Table: first row is headers. Required columns ИИН and ФИО (or Фамилия + Имя); Email if present must
-   match what the participant enters. Every other column is shown to the participant as is, except
-   Телефон and columns whose header starts with "_" (internal notes). */
+   Registration tab: columns are found by their question text (ИИН/ЖСН, ФИО/Аты-жөні, почта, телефон);
+   the participant's ФИО and ИИН are preferred over a parent's or teacher's. Every email and phone
+   column of the row counts. A filled email and phone must match what the participant types.
+   Results tab: first row is headers, needs an ИИН column. Every other column is shown as is, except
+   ФИО, email, phone, timestamp and columns whose header starts with "_" (internal notes). */
 const crypto=require('crypto');
 
 const ALLOWED_ORIGIN=/^https:\/\/((www\.)?fibonacci-olympiads\.kz|[a-z0-9-]+\.vercel\.app)$|^http:\/\/localhost(:\d+)?$/;
@@ -77,73 +84,108 @@ async function googleToken(sa){
   return data.access_token;
 }
 
-async function fetchRows(){
-  const env=process.env;
-  if(env.GOOGLE_SERVICE_ACCOUNT_JSON&&env.RESULTS_SHEET_ID){
-    const sa=JSON.parse(env.GOOGLE_SERVICE_ACCOUNT_JSON);
-    const token=await googleToken(sa);
-    const base='https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent(env.RESULTS_SHEET_ID.trim());
-    let range=(env.RESULTS_SHEET_RANGE||'').trim();
-    if(!range){
-      const m=await fetch(base+'?fields=sheets.properties.title',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(10000)});
-      const meta=await m.json().catch(()=>({}));
-      if(!m.ok)throw new Error('sheets meta: '+m.status+' '+(meta.error?.message||''));
-      range=meta.sheets[0].properties.title;
-    }
-    const r=await fetch(base+'/values/'+encodeURIComponent(range)+'?valueRenderOption=FORMATTED_VALUE',
-      {headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(10000)});
-    const data=await r.json().catch(()=>({}));
-    if(!r.ok)throw new Error('sheets values: '+r.status+' '+(data.error?.message||''));
-    return (data.values||[]).map(row=>row.map(String));
+async function fetchSheet(id,range){
+  const sa=JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+  const token=await googleToken(sa);
+  const auth={headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(10000)};
+  const base='https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent(id);
+  if(!range){
+    const m=await fetch(base+'?fields=sheets.properties.title',auth);
+    const meta=await m.json().catch(()=>({}));
+    if(!m.ok)throw new Error('sheets meta: '+m.status+' '+(meta.error?.message||''));
+    range=meta.sheets[0].properties.title;
   }
-  if(/^https:\/\//.test(env.RESULTS_CSV_URL||'')){
-    const r=await fetch(env.RESULTS_CSV_URL.trim(),{redirect:'follow',signal:AbortSignal.timeout(10000)});
-    if(!r.ok)throw new Error('csv: '+r.status);
-    return parseCsv((await r.text()).replace(/^﻿/,''));
-  }
-  throw new Error('no results source configured');
+  const r=await fetch(base+'/values/'+encodeURIComponent(range)+'?valueRenderOption=FORMATTED_VALUE',auth);
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error('sheets values "'+range+'": '+r.status+' '+(data.error?.message||''));
+  return (data.values||[]).map(row=>row.map(String));
+}
+async function fetchCsv(url){
+  const r=await fetch(url,{redirect:'follow',signal:AbortSignal.timeout(10000)});
+  if(!r.ok)throw new Error('csv: '+r.status);
+  return parseCsv((await r.text()).replace(/^\uFEFF/,''));
+}
+async function fetchRows(kind){
+  const env=process.env,v=k=>(env[k]||'').trim();
+  const csv=v(kind+'_CSV_URL');
+  if(/^https:\/\//.test(csv))return fetchCsv(csv);
+  const id=kind==='REG'?v('REG_SHEET_ID'):v('RESULTS_SHEET_ID')||v('REG_SHEET_ID');
+  if(id&&env.GOOGLE_SERVICE_ACCOUNT_JSON)return fetchSheet(id,v(kind+'_SHEET_RANGE')||(kind==='RESULTS'?'Результаты':''));
+  throw new Error(kind+' sheet is not configured');
 }
 
-const keyOf=h=>h.toLowerCase().replace(/ё/g,'е').replace(/[^\p{L}\d]/gu,'');
-const ALIAS={
-  iin:['иин','iin','жсн','иинучастника','жснқатысушы'],
-  fio:['фио','фиоучастника','атыжөні','атыжони','толықаты','fullname','name','participant'],
-  last:['фамилия','тегі','тег','surname','lastname'],
-  first:['имя','аты','firstname'],
-  middle:['отчество','әкесініңаты','patronymic','middlename'],
-  email:['email','почта','электроннаяпочта','электрондықпошта','емейл','элпочта','mail'],
-  phone:['телефон','phone','номертелефона','телефонномері','тел']
+/* ---------- columns: found by the question / header text ---------- */
+const low=h=>String(h).toLowerCase().replace(/ё/g,'е').replace(/\s+/g,' ').trim();
+const KIND={
+  iin:/(^|[^\p{L}])(иин|жсн|iin)([^\p{L}]|$)/u,
+  fio:/фио|аты-жөні|аты жөні|толық аты|full ?name|^name$|фамилия,? (и )?имя|имя,? (и )?фамилия|тегі,? аты/,
+  last:/^(фамилия|тегі|surname|last ?name)/,
+  first:/^(имя|аты|first ?name)([^\p{L}]|$)/u,
+  middle:/^(отчество|әкесінің аты|patronymic|middle ?name)/,
+  email:/почт|пошта|e-?mail|емейл|mail/,
+  phone:/телефон|phone|whatsapp|ватсап|ұялы|(^|[^\p{L}])тел([^\p{L}]|$)/u
 };
-
-let cache={at:0,table:null};
-async function loadTable(){
-  if(cache.table&&Date.now()-cache.at<TABLE_TTL)return cache.table;
-  const rows=(await fetchRows()).filter(r=>r.some(c=>String(c).trim()));
-  if(!rows.length)throw new Error('results table is empty');
-  const headers=rows[0].map(h=>String(h).trim());
-  const col={};
-  headers.forEach((h,i)=>{const k=keyOf(h);for(const f in ALIAS)if(col[f]===undefined&&ALIAS[f].includes(k))col[f]=i});
-  if(col.iin===undefined||(col.fio===undefined&&col.last===undefined))throw new Error('results table needs ИИН and ФИО columns, got: '+headers.join(' | '));
-  const hidden=new Set([col.iin,col.email,col.phone].filter(i=>i!==undefined));
-  const shown=headers.map((h,i)=>i).filter(i=>headers[i]&&!hidden.has(i)&&!headers[i].startsWith('_'));
-  const byIin=new Map();
-  for(const r of rows.slice(1)){
-    const iin=String(r[col.iin]||'').replace(/\D/g,'');
-    if(!iin)continue;
-    const fio=col.fio!==undefined?r[col.fio]:[r[col.last],r[col.first],r[col.middle]].filter(Boolean).join(' ');
-    const item={fio:String(fio||'').trim(),email:col.email!==undefined?normEmail(r[col.email]):'',
-      fields:shown.filter(i=>![col.fio,col.last,col.first,col.middle].includes(i)).map(i=>[headers[i],String(r[i]??'').trim()]).filter(([,v])=>v)};
-    if(!byIin.has(iin))byIin.set(iin,[]);
-    byIin.get(iin).push(item);
+const STAMP=/отметка времени|timestamp|уақыт белгісі/;
+const OTHER=/родител|ата-ана|ата ана|мама|папа|учител|мұғалім|педагог|наставник|куратор|тренер|жетекші|parent|teacher|mentor|coach/;
+const SELF=/участ|ученик|учащ|оқушы|қатысушы|бала|ребен|child|student|participant/;
+function columns(headers){
+  const h=headers.map(low),col={};
+  const taken=new Set();
+  for(const k of ['iin','fio','last','first','middle','email','phone']){
+    let c=h.map((x,i)=>i).filter(i=>h[i]&&!taken.has(i)&&KIND[k].test(h[i]));
+    if(['email','phone'].includes(k)){col[k]=c;c.forEach(i=>taken.add(i));continue}
+    // the participant's own name/ИИН, not the parent's or teacher's
+    const own=c.filter(i=>!OTHER.test(h[i]));if(own.length)c=own;
+    const self=c.filter(i=>SELF.test(h[i]));if(self.length)c=self;
+    if(c.length){col[k]=c[0];taken.add(c[0])}
   }
-  cache={at:Date.now(),table:byIin};
-  return byIin;
+  col.ids=new Set([col.iin,col.fio,col.last,col.first,col.middle,...col.email,...col.phone].filter(i=>i!==undefined));
+  h.forEach((x,i)=>{if(STAMP.test(x))col.ids.add(i)});
+  return col;
+}
+const digits=s=>String(s||'').replace(/\D/g,'');
+const phone10=s=>digits(s).slice(-10);
+
+async function loadRows(kind){
+  const rows=(await fetchRows(kind)).filter(r=>r.some(c=>String(c).trim()));
+  if(!rows.length)throw new Error(kind+' sheet is empty');
+  const headers=rows[0].map(h=>String(h).trim()),col=columns(headers);
+  if(col.iin===undefined)throw new Error(kind+' sheet needs an ИИН column, got: '+headers.join(' | '));
+  return {headers,col,rows:rows.slice(1)};
 }
 
-// rows of this ИИН whose name and (if registered) email match what was typed
-async function findResults(iin,fio,email){
-  const rows=(await loadTable()).get(iin)||[];
-  return rows.filter(r=>nameMatches(fio,r.fio)&&(!r.email||r.email===email));
+const cache={};
+async function cached(kind,build){
+  const c=cache[kind];
+  if(c&&Date.now()-c.at<TABLE_TTL)return c.map;
+  const {headers,col,rows}=await loadRows(kind),map=new Map();
+  for(const r of rows){
+    const iin=digits(r[col.iin]);
+    if(!iin)continue;
+    if(!map.has(iin))map.set(iin,[]);
+    map.get(iin).push(build(r,col,headers));
+  }
+  cache[kind]={at:Date.now(),map};
+  return map;
+}
+const cell=(r,i)=>i===undefined?'':String(r[i]??'').trim();
+
+// registration answers: who may see results and where the code may go
+const loadReg=()=>cached('REG',(r,col)=>({
+  fio:cell(r,col.fio)||[cell(r,col.last),cell(r,col.first),cell(r,col.middle)].filter(Boolean).join(' '),
+  emails:col.email.map(i=>normEmail(r[i])).filter(Boolean),
+  phones:col.phone.map(i=>phone10(r[i])).filter(p=>p.length===10)
+}));
+// results: every column except identity ones and "_notes"
+const loadResults=()=>cached('RESULTS',(r,col,headers)=>
+  headers.map((h,i)=>[h,cell(r,i)]).filter(([h,v],i)=>h&&v&&!col.ids.has(i)&&!h.startsWith('_')));
+
+// the registration of this ИИН that matches what was typed; a filled email and phone must match
+async function findRegistration(iin,fio,email,phone){
+  const rows=(await loadReg()).get(iin)||[];
+  return rows.find(r=>nameMatches(fio,r.fio)
+    &&(!r.emails.length||r.emails.includes(email))
+    &&(!r.phones.length||r.phones.includes(phone10(phone))))||null;
 }
 
 /* ---------- token: payload + HMAC(payload, code) ---------- */
@@ -229,11 +271,12 @@ module.exports=async(req,res)=>{
       if(await hit('ip:'+ip,3600)>SENDS_PER_IP||await hit('iin:'+iin,3600)>SENDS_PER_IIN)
         return res.status(429).json({ok:false,error:'too_many'});
 
-      const rows=await findResults(iin,fio,email);
-      if(!rows.length)return res.status(404).json({ok:false,error:'not_found'});
+      const reg=await findRegistration(iin,fio,email,phone);
+      if(!reg)return res.status(404).json({ok:false,error:'not_found'});
+      if(!(await loadResults()).get(iin))return res.status(404).json({ok:false,error:'no_results'});
 
       const code=String(crypto.randomInt(0,1e6)).padStart(6,'0');
-      const token=makeToken({iin,fio,email,exp:Math.floor(Date.now()/1000)+CODE_TTL,n:crypto.randomBytes(6).toString('base64url')},code);
+      const token=makeToken({iin,fio:reg.fio,exp:Math.floor(Date.now()/1000)+CODE_TTL,n:crypto.randomBytes(6).toString('base64url')},code);
       await sendCode(email,code,lang);
       console.log('results code sent',{iin:iin.slice(0,6)+'******',phone:phone.slice(-4)});
       return res.status(200).json({ok:true,token});
@@ -245,9 +288,9 @@ module.exports=async(req,res)=>{
       if(await hit('try:'+tokenId(token),CODE_TTL)>MAX_TRIES)return res.status(429).json({ok:false,error:'too_many'});
       const data=readToken(token,code);
       if(!data)return res.status(400).json({ok:false,error:'code'});
-      const rows=await findResults(data.iin,data.fio,data.email);
-      if(!rows.length)return res.status(404).json({ok:false,error:'not_found'});
-      return res.status(200).json({ok:true,results:rows.map(r=>({fio:r.fio,fields:r.fields}))});
+      const rows=(await loadResults()).get(data.iin);
+      if(!rows)return res.status(404).json({ok:false,error:'no_results'});
+      return res.status(200).json({ok:true,results:rows.map(fields=>({fio:data.fio,fields}))});
     }
 
     return res.status(400).json({ok:false,error:'bad_request'});
