@@ -13,7 +13,9 @@ const ALLOWED_ORIGIN=/^https:\/\/((www\.)?fibonacci-olympiads\.kz|[a-z0-9-]+\.ve
 const DEAL_CATEGORY_ID='21'; // ATLANTIA-FIMO
 const UTM=['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
 
-const clean=(v,max)=>String(v??'').replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,max);
+// only strings/numbers count as input (objects would become "[object Object]"); C0/C1 controls and
+// Unicode line/paragraph separators are blanked so a field cannot add lines to COMMENTS
+const clean=(v,max)=>(typeof v==='string'||typeof v==='number'?String(v):'').replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g,' ').trim().slice(0,max);
 
 function webhookBase(){
   const raw=(process.env.BITRIX_WEBHOOK_URL||'').trim();
