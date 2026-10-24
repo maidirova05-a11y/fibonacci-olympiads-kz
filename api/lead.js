@@ -46,9 +46,10 @@ module.exports=async(req,res)=>{
 
   const lang=['ru','kk','en'].includes(b.lang)?b.lang:'ru';
   const page=clean(b.page,500);
+  const referrer=clean(b.referrer,500); // site the visitor came from, captured by the page with the UTM tags
   const env=process.env;
   const common={
-    COMMENTS:[question&&'Вопрос: '+question,'Язык сайта: '+lang,page&&'Страница: '+page].filter(Boolean).join('\n'),
+    COMMENTS:[question&&'Вопрос: '+question,'Язык сайта: '+lang,page&&'Страница: '+page,referrer&&'Источник перехода: '+referrer].filter(Boolean).join('\n'),
     SOURCE_DESCRIPTION:'Сайт fibonacci-olympiads.kz — кнопка «Получить консультацию»'
   };
   if(env.BITRIX_SOURCE_ID)common.SOURCE_ID=env.BITRIX_SOURCE_ID;

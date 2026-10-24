@@ -358,6 +358,7 @@ onLang(document.documentElement.lang||'ru');
   try{
     const q=new URLSearchParams(location.search);
     ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(k=>{const v=q.get(k);if(v)utm[k]=v});
+    const ref=document.referrer;if(ref&&!ref.startsWith(location.origin))utm.referrer=ref;
     if(Object.keys(utm).length)sessionStorage.setItem('atl-utm',JSON.stringify(utm));
     else Object.assign(utm,JSON.parse(sessionStorage.getItem('atl-utm')||'{}'));
   }catch(e){}
