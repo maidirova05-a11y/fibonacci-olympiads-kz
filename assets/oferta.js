@@ -7,6 +7,12 @@
   function set(l){
     if(!UI[l])l='ru';
     document.querySelectorAll('[data-doc]').forEach(a=>a.hidden=a.dataset.doc!==l);
+    // exactly one <h1> on the page: the visible article's title; the hidden ones use <h2> styled the same
+    document.querySelectorAll('[data-doc] .doc-title').forEach(t=>{
+      const tag=t.closest('[data-doc]').dataset.doc===l?'H1':'H2';
+      if(t.tagName===tag)return;
+      const n=document.createElement(tag);n.className=t.className;n.textContent=t.textContent;t.replaceWith(n);
+    });
     document.querySelectorAll('[data-ui]').forEach(e=>e.textContent=UI[l][e.dataset.ui]);
     document.querySelectorAll('.lang button').forEach(b=>b.classList.toggle('on',b.dataset.lang===l));
     root.lang=l;document.title=UI[l].title+' — '+document.title.split(' — ').slice(1).join(' — ');

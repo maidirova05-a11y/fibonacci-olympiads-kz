@@ -9,13 +9,16 @@
      BITRIX_STATUS_ID          lead stage, e.g. NEW, when creating leads             (optional)
      BITRIX_SOURCE_ID          source, e.g. WEB                                      (optional)
      BITRIX_ASSIGNED_BY_ID     responsible user id                                   (optional) */
-const ALLOWED_ORIGIN=/^https:\/\/((www\.)?fibonacci-olympiads\.kz|[a-z0-9-]+\.vercel\.app)$|^http:\/\/localhost(:\d+)?$/;
+const ALLOWED_ORIGIN=/^https:\/\/((www\.)?fibonacci-olympiads\.kz|fibonacci-olympiad-kz(-[a-z0-9-]+)?\.vercel\.app)$|^http:\/\/localhost(:\d+)?$/;
 const DEAL_CATEGORY_ID='21'; // ATLANTIA-FIMO
+const MAX_BODY=16*1024;
 const UTM=['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
 
 // only strings/numbers count as input (objects would become "[object Object]"); C0/C1 controls and
 // Unicode line/paragraph separators are blanked so a field cannot add lines to COMMENTS
 const clean=(v,max)=>(typeof v==='string'||typeof v==='number'?String(v):'').replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g,' ').trim().slice(0,max);
+// page/referrer: only absolute http(s) URLs are kept, anything else is dropped
+const httpUrl=(v,max)=>{const s=clean(v,max);try{return /^https?:$/.test(new URL(s).protocol)?s:''}catch(e){return ''}};
 
 function webhookBase(){
   const raw=(process.env.BITRIX_WEBHOOK_URL||'').trim();
@@ -30,7 +33,9 @@ module.exports=async(req,res)=>{
   const origin=req.headers.origin;
   if(origin&&!ALLOWED_ORIGIN.test(origin))return res.status(403).json({ok:false});
 
+  if(Number(req.headers['content-length'])>MAX_BODY)return res.status(413).json({ok:false,error:'too_large'});
   let b=req.body;
+  if(typeof b==='string'&&b.length>MAX_BODY)return res.status(413).json({ok:false,error:'too_large'});
   if(typeof b==='string'){try{b=JSON.parse(b)}catch(e){b=null}}
   if(!b||typeof b!=='object')return res.status(400).json({ok:false,error:'bad_request'});
   // honeypot: real visitors never see this field
@@ -47,8 +52,8 @@ module.exports=async(req,res)=>{
   if(!base){console.error('BITRIX_WEBHOOK_URL is not set');return res.status(500).json({ok:false,error:'config'})}
 
   const lang=['ru','kk','en'].includes(b.lang)?b.lang:'ru';
-  const page=clean(b.page,500);
-  const referrer=clean(b.referrer,500); // site the visitor came from, captured by the page with the UTM tags
+  const page=httpUrl(b.page,500);
+  const referrer=httpUrl(b.referrer,500); // site the visitor came from, captured by the page with the UTM tags
   const env=process.env;
   const common={
     COMMENTS:[question&&'Вопрос: '+question,'Язык сайта: '+lang,page&&'Страница: '+page,referrer&&'Источник перехода: '+referrer].filter(Boolean).join('\n'),
@@ -65,7 +70,7 @@ module.exports=async(req,res)=>{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({fields,params:{REGISTER_SONET_EVENT:'Y'}}),
-      signal:AbortSignal.timeout(10000)
+      signal:AbortSignal.timeout(4500) // two sequential calls must fit in maxDuration (vercel.json)
     });
     const data=await r.json().catch(()=>({}));
     if(!r.ok||!data.result)throw new Error(`${method}: ${r.status} ${data.error||''} ${data.error_description||''}`);

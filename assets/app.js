@@ -312,6 +312,7 @@ const floatNums=(function(){
 
   document.querySelectorAll('[data-count]').forEach(el=>{
     const n=+el.dataset.count,o={v:0};
+    el.textContent='0'; // the HTML holds the real number for no-JS visitors and crawlers
     ScrollTrigger.create({trigger:el,start:'top 90%',once:true,onEnter:()=>gsap.to(o,{v:n,duration:1.6,ease:'power2.out',onUpdate:()=>el.textContent=Math.round(o.v)})});
   });
 
