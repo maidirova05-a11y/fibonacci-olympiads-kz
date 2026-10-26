@@ -14,6 +14,15 @@ Static site (HTML/CSS/JS, no build step), hosted on Vercel.
 
 Deploy: `vercel deploy --prod`
 
+## Performance
+
+- **Images**: every local raster on the pages is a `<picture>` — AVIF candidates first, WebP fallback, `srcset`/`sizes` by rendered width (`name-<width>.avif|webp` next to the original; the original `.webp` stays the largest WebP candidate and the `src`). Each picture `img` keeps `width`/`height` plus an inline `aspect-ratio` equal to the original, so a smaller candidate can never change layout. When an image changes, regenerate its variants at the same widths (AVIF ≈ q68, WebP q82) or drop the `<picture>` for it. Regulation scans (`assets/docs`): 640/940/1100 px, only the first page of the visible language loads eagerly (`fetchpriority="high"`), the other language's first page is lazy.
+- **Unsplash photos** stay on images.unsplash.com (imgix `auto=format` already serves AVIF/WebP), now with `srcset` (`w=` steps) and `sizes`, so phones fetch 480–800 px instead of 900–1400 px.
+- **Promo video**: `preload="none"`; the poster is attached by `assets/app.js` only when the video gets within 800 px of the viewport (`data-poster`; a `<noscript>` style shows it without JS).
+- **Fonts** are self-hosted in `assets/fonts` (the exact Google Fonts files and `@font-face`/`unicode-range` rules, inlined in each page's `<head>`; the files the first screen needs are preloaded). The CSP no longer allows fonts.googleapis.com / fonts.gstatic.com.
+- **Intro**: plays once per tab session; returning to `/` from a subpage (sessionStorage `fib-intro`) shows the finished hero immediately. A reload still replays it.
+- **Caching**: pages load scripts as `/assets/x.js?v=<content hash>` and `vercel.json` serves versioned scripts and `assets/fonts` as immutable for a year (unversioned `.js` URLs stay `must-revalidate`). **After editing any `assets/*.js` run `node scripts/version-assets.mjs`**, otherwise visitors keep the old file.
+
 ## SEO
 
 - `index.html` `<head>`: title, description, keywords, Open Graph/Twitter and JSON-LD (`Organization`, `WebSite`, `WebPage`, `EducationEvent` for each stage, `FAQPage`). Subpages carry `BreadcrumbList`.

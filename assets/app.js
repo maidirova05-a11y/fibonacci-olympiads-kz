@@ -145,6 +145,9 @@ document.querySelectorAll('.lang button').forEach(b=>b.addEventListener('click',
 (function(){
   const box=document.querySelector('.vid');if(!box)return;
   const v=box.querySelector('video');
+  // the poster is attached only when the video approaches the viewport (it is far below the fold)
+  const io=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){v.poster=v.dataset.poster;io.disconnect()}},{rootMargin:'800px 0px'});
+  io.observe(v);
   box.querySelector('.vid-play').addEventListener('click',()=>{box.classList.add('on');v.controls=true;v.play().catch(()=>{})});
   // stop the sound when the video scrolls out of view
   new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting&&!v.paused)v.pause()}),{threshold:.2}).observe(v);
@@ -204,6 +207,7 @@ const floatNums=(function(){
   root.classList.remove('intro');
 
   const done=()=>{
+    try{sessionStorage.setItem('fib-intro','1')}catch(e){}
     root.classList.remove('lock');document.getElementById('skip').style.display='none';
     gsap.set(icon,{autoAlpha:0});gsap.set(navLogo,{clearProps:'clipPath'});
     ScrollTrigger.refresh();
@@ -265,6 +269,10 @@ const floatNums=(function(){
   const skip=()=>{if(tl.progress()<1)tl.progress(1)};
   document.getElementById('skip').addEventListener('click',skip);
   addEventListener('keydown',e=>{if(e.key==='Escape')skip()});
+  // returning visitor (intro already seen in this tab session, e.g. back from /polozhenie): skip it so the
+  // hero paints right away; a reload still replays it
+  let seen=false;try{seen=sessionStorage.getItem('fib-intro')==='1'&&(performance.getEntriesByType('navigation')[0]||{}).type!=='reload'}catch(e){}
+  if(seen)skip();
 
   // mouse parallax for the floating numbers
   if(!reduce&&matchMedia('(hover: hover)').matches){
