@@ -1,0 +1,14 @@
+.git
+.github
+.claude
+.vercel
+node_modules
+scripts
+*.csv
+*.docx
+*.doc
+/*.pdf
+.env
+.env.*
+docker.env
+*.log

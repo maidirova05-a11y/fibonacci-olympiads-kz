@@ -5,3 +5,7 @@
 .claude
 *.csv
 /scripts
+/docker
+/Dockerfile
+/compose.yaml
+docker.env*

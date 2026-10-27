@@ -1,0 +1,18 @@
+# fibonacci-olympiads.kz на своём сервере: статика + приём заявок в Bitrix24 (базы нет).
+#
+#   cp docker.env.example docker.env   # и заполнить
+#   docker compose up -d --build
+#
+# Сайт слушает только 127.0.0.1:3108 — наружу его отдаёт Caddy с HTTPS
+# (docs/SERVER.md в репозитории az-group-projects).
+
+name: fibonacci
+
+services:
+  app:
+    build: .
+    image: fibonacci-app
+    restart: unless-stopped
+    env_file: docker.env
+    ports:
+      - "127.0.0.1:${APP_PORT:-3108}:3000"
