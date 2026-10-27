@@ -1,0 +1,35 @@
+name: Docker
+
+# Проверяет Docker-версию сайта (запуск на своём сервере вместо Vercel):
+# образ собирается, сайт поднимается, страницы, заголовки и функция заявок
+# отвечают как на Vercel. См. BACKUP.md.
+on:
+  push:
+  # Раз в неделю: базовый образ Node обновляется, и сборка должна оставаться рабочей.
+  schedule:
+    - cron: '0 22 * * 6' # воскресенье, 03:00 по Астане
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker:
+    name: Docker smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Собрать, поднять, проверить
+        run: docker/smoke.sh
+
+      - name: Логи при ошибке
+        if: failure()
+        run: |
+          docker compose ps -a || true
+          docker compose logs --tail 200 || true

@@ -1,0 +1,3 @@
+# Скрипты запускаются в Linux (Docker, CI, сервер) — только LF.
+*.sh  text eol=lf
+*.mjs text eol=lf

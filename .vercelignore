@@ -9,3 +9,7 @@
 /Dockerfile
 /compose.yaml
 docker.env*
+/.github
+/BACKUP.md
+/.gitattributes
+/.dockerignore
