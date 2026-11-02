@@ -5,3 +5,6 @@
 .claude
 *.csv
 /scripts
+/test
+/docs
+/package.json
