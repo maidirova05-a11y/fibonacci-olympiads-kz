@@ -1,0 +1,10 @@
+{
+  "name": "fibonacci-olympiads-kz",
+  "private": true,
+  "description": "Static landing site; api/ holds Vercel serverless functions (see docs/BACKEND.md)",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "check": "node --check api/lead.js && npm test",
+    "version-assets": "node scripts/version-assets.mjs"
+  }
+}
