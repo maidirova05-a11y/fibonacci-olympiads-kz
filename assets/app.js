@@ -357,9 +357,9 @@ onLang(document.documentElement.lang||'ru');
   if(!dlg||!form||typeof dlg.showModal!=='function')return;
   const ok=document.getElementById('leadOk'),err=document.getElementById('leadErr'),send=form.querySelector('[type=submit]');
   const MSG={
-    ru:{name:'Укажите имя',phone:'Укажите номер телефона полностью',fail:'Не удалось отправить заявку. Попробуйте ещё раз или напишите нам в WhatsApp.'},
-    kk:{name:'Атыңызды жазыңыз',phone:'Телефон нөмірін толық жазыңыз',fail:'Өтінім жіберілмеді. Қайталап көріңіз немесе WhatsApp-қа жазыңыз.'},
-    en:{name:'Please enter your name',phone:'Please enter your full phone number',fail:'Could not send the request. Please try again or message us on WhatsApp.'}
+    ru:{name:'Укажите имя',phone:'Укажите номер телефона полностью',rate:'Слишком много попыток. Подождите минуту и попробуйте снова.',fail:'Не удалось отправить заявку. Попробуйте ещё раз или напишите нам в WhatsApp.'},
+    kk:{name:'Атыңызды жазыңыз',phone:'Телефон нөмірін толық жазыңыз',rate:'Тым көп әрекет. Бір минут күтіп, қайталап көріңіз.',fail:'Өтінім жіберілмеді. Қайталап көріңіз немесе WhatsApp-қа жазыңыз.'},
+    en:{name:'Please enter your name',phone:'Please enter your full phone number',rate:'Too many attempts. Please wait a minute and try again.',fail:'Could not send the request. Please try again or message us on WhatsApp.'}
   };
   const m=()=>MSG[document.documentElement.lang]||MSG.ru;
   // UTM tags of the visit, so the lead in Bitrix shows where the visitor came from
@@ -398,7 +398,7 @@ onLang(document.documentElement.lang||'ru');
       if(!r.ok||!d.ok)throw new Error(d.error||r.status);
       form.reset();form.hidden=true;ok.hidden=false;
       if(window.ymGoal)ymGoal('lead_sent');
-    }catch(x){showErr(m().fail)}
+    }catch(x){const c=String(x&&x.message);showErr(m()[c==='rate_limited'?'rate':c==='name'||c==='phone'?c:'fail'])}
     finally{send.disabled=false}
   });
 })();
