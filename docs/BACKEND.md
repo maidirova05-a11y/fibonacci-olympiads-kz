@@ -46,6 +46,42 @@ There is no database. If one is added: pooled connection string from env, parame
 optional `BITRIX_DEAL_CATEGORY_ID` (digits or `lead`), `BITRIX_DEAL_STAGE_ID`, `BITRIX_STATUS_ID`,
 `BITRIX_SOURCE_ID`, `BITRIX_ASSIGNED_BY_ID` (digits). An invalid value returns 500 `config` and logs the variable name.
 
+## Results cabinet (`api/results/*`, Fibonacci only)
+
+Flow: `/results` → parent enters the e-mail → `request-password` checks it against the imported results and mails a
+fresh 6-digit password (it becomes the account password) → `login` (login = e-mail) sets an HttpOnly, SameSite=Strict
+cookie scoped to `/api/results` (7 days, HMAC-signed) → `me` returns the participants for that e-mail → the browser
+draws the certificate (canvas → PDF/PNG) → `change-password` (needs the current one; signs out other sessions) → `logout`.
+All endpoints follow the rules above (POST only, Origin check = CSRF protection, JSON ≤ 4 KB). Code: `api/_lib/results.js`
+(flow), `auth.js` (scrypt hashes, sessions), `store.js` (Upstash Redis REST), `mailer.js` (Resend).
+
+Only e-mails from the «Почта» column of the results sheet get access; rows without it are skipped by the import and
+listed in its output. One e-mail may have several children. Stored per participant: code, name, score, grade, school,
+city, stage date, language — no phones, IIN or teacher data.
+
+| Status | `error` | Meaning |
+|---|---|---|
+| 400 | `email`, `password`, `current`, `weak` | invalid field / wrong current password / new password < 6 chars |
+| 401 | `credentials`, `auth` | wrong e-mail or password / no or expired session |
+| 404 | `not_found` | e-mail is not in the results |
+| 429 | `mail_wait`, `mail_daily`, `locked`, `rate_limited` | 1 letter/min and 5/day per e-mail; 10 wrong passwords per e-mail → 30 min lock; per-address limits |
+| 502 / 503 | `mail`, `unavailable` | Resend / store failed |
+
+Env (Vercel → Settings → Environment Variables):
+
+- Upstash Redis: Vercel → Storage → Marketplace → Upstash for Redis → connect to the project; it adds
+  `KV_REST_API_URL` / `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`; both work).
+- `RESEND_API_KEY` (`re_…`) and `MAIL_FROM`, e.g. `Fibonacci Olympiad <results@fibonacci-olympiads.kz>`; the domain must be
+  verified in Resend (DNS records), otherwise letters are rejected.
+- `RESULTS_SESSION_SECRET` — random string ≥ 32 chars (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`).
+  Changing it signs everybody out.
+
+Loading results: `vercel env pull .env.local`, then `npm run import-results -- "Результаты.xlsx"` (add `--dry` to only
+check the sheet, `--add "ФИО|email|балл"` for an extra row). Columns are found by header (`Код участника`, `ФИО`,
+`Результат`, `Город`, `Школа`, `Явка`, `Класс`, `Почта`, `Язык`); the stage date is the `17.10.2026, Астана` cell.
+Re-importing replaces all results; accounts and passwords stay. Without the Upstash env the import writes to
+`.data/dev-store.json` for `npm run dev`.
+
 ## Tests
 
-`npm test` (Node 20+, no dependencies) runs `test/lead.test.js` with a mocked `fetch`; no real CRM is called.
+`npm test` (Node 20+, no dependencies) runs `test/lead.test.js` and `test/results.test.js` with a mocked `fetch`, a temp-file store and a captured mailer; no real CRM, Redis or mail is called.
