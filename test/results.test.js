@@ -140,7 +140,6 @@ test('the latest code works; requesting a code does not reset the own password o
   await db.del(results.key.mailGap('parent@mail.ru'));
   await call('request', { email: 'parent@mail.ru' });
   const second = lastPassword();
-  if (first !== second) assert.equal((await call('login', { email: 'parent@mail.ru', password: first })).status, 401);
   assert.equal((await call('login', { email: 'parent@mail.ru', password: second })).status, 200);
   assert.equal((await call('change', { current: second, password: 'mysecret' })).status, 200);
   const session = cookie;
@@ -157,7 +156,6 @@ test('the latest code works; requesting a code does not reset the own password o
   await db.del(results.key.mailGap('parent@mail.ru'));
   await call('request', { email: 'parent@mail.ru' });
   const fourth = lastPassword();
-  if (third !== fourth) assert.equal((await call('login', { email: 'parent@mail.ru', password: third })).status, 401);
   assert.equal((await call('login', { email: 'parent@mail.ru', password: fourth })).status, 200);
   assert.equal((await call('me', {}, { cookie: session })).status, 401, 'old sessions end once the code is used');
 });
@@ -263,4 +261,25 @@ test('Upstash REST client: pipeline shape and errors', async () => {
   } finally {
     global.fetch = saved;
   }
+});
+
+test('codes from the last three letters work; an older one does not', async () => {
+  const codes = [];
+  for (let i = 0; i < 4; i++) {
+    await db.del(results.key.mailGap('parent@mail.ru'));
+    await call('request', { email: 'parent@mail.ru' });
+    codes.push(lastPassword());
+  }
+  const oldest = codes[0];
+  if (!codes.slice(1).includes(oldest)) assert.equal((await call('login', { email: 'parent@mail.ru', password: oldest })).status, 401);
+  // the parent types the code from the second of the last three letters: accepted
+  assert.equal((await call('login', { email: 'parent@mail.ru', password: codes[2] })).status, 200);
+  // once a code is used, the others are gone
+  cookie = '';
+  if (codes[3] !== codes[2]) assert.equal((await call('login', { email: 'parent@mail.ru', password: codes[3] })).status, 401);
+});
+
+test('an older single-code record is still accepted', async () => {
+  await db.set(results.key.otp('parent@mail.ru'), JSON.stringify({ h: await auth.hashPassword('424242'), t: '' }));
+  assert.equal((await call('login', { email: 'parent@mail.ru', password: '424242' })).status, 200);
 });

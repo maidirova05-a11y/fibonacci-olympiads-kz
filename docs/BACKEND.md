@@ -55,7 +55,7 @@ signs out other sessions → HttpOnly, SameSite=Strict cookie scoped to `/api/re
 returns the participants for that e-mail → the browser draws the certificate (canvas → PDF/PNG) → `change-password`
 (needs the current one; signs out other sessions) → `logout`.
 
-Protection: the code lives 48 h and allows 10 tries, then it is deleted; requesting a code never changes the existing
+Protection: codes from the last three letters are accepted (mail apps group identical letters, so parents often type an earlier one); they live 48 h from the latest letter and share 10 tries, then they are deleted; requesting a code never changes the existing
 password, so a stranger cannot reset or sign out a parent. Wrong passwords are counted *before* the check (parallel
 requests cannot slip past): 10 per e-mail per 30 min, then `locked` — a fresh code from the mail still opens a locked
 account. Wrong "current password" in `change-password` counts against the same limit. The one-letter-per-minute slot is
