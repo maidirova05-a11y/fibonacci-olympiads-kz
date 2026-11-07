@@ -2,7 +2,7 @@
 // API: /api/results/* (api/_lib/results.js). The session is an HttpOnly cookie; this script never sees it.
 (function(){
   const UI={
-    ru:{back:'На главную',title:'Результаты олимпиады',sub:'Введите почту, которую вы указали при регистрации. Мы отправим на неё пароль от личного кабинета с результатами и сертификатом участника.',
+    ru:{back:'На главную',title:'Результаты олимпиады',sub:'Введите почту, которую вы указали при регистрации. Мы отправим на неё пароль от личного кабинета с результатами.',
       email:'Электронная почта',ph:'name@mail.ru',getpw:'Получить пароль',havepw:'У меня уже есть пароль',
       pw:'Пароль',login:'Войти',sent:'Если почта {e} есть в списке участников, пароль уже отправлен: письмо приходит в течение пары минут. Проверьте папку «Спам». Не пришло — проверьте адрес или напишите на info@az-group.kz.',
       loginsub:'Логин — ваша почта. Пароль — 6 цифр из письма (действует 48 часов) или ваш собственный, если вы его задали.',
@@ -17,7 +17,7 @@
         current:'Текущий пароль указан неверно.',weak:'Новый пароль: не короче 6 символов, без пробелов в начале и в конце.',auth:'Сессия истекла, войдите снова.',
         rate_limited:'Слишком много запросов. Подождите немного.',mail:'Не удалось отправить письмо. Попробуйте позже.',unavailable:'Сервис временно недоступен. Попробуйте через несколько минут.',
         net:'Нет соединения. Проверьте интернет и попробуйте снова.',def:'Что-то пошло не так. Попробуйте позже.'}},
-    kk:{back:'Басты бетке',title:'Олимпиада нәтижелері',sub:'Тіркелу кезінде көрсеткен поштаңызды енгізіңіз. Біз оған нәтижелер мен қатысушы сертификаты бар жеке кабинеттің құпиясөзін жібереміз.',
+    kk:{back:'Басты бетке',title:'Олимпиада нәтижелері',sub:'Тіркелу кезінде көрсеткен поштаңызды енгізіңіз. Біз оған нәтижелер бар жеке кабинеттің құпиясөзін жібереміз.',
       email:'Электрондық пошта',ph:'name@mail.ru',getpw:'Құпиясөз алу',havepw:'Менде құпиясөз бар',
       pw:'Құпиясөз',login:'Кіру',sent:'Егер {e} поштасы қатысушылар тізімінде болса, құпиясөз жіберілді: хат бірнеше минут ішінде келеді. «Спам» қалтасын тексеріңіз. Хат келмесе, мекенжайды тексеріңіз немесе info@az-group.kz поштасына жазыңыз.',
       loginsub:'Логин — поштаңыз. Құпиясөз — хаттағы 6 таңбалы құпиясөз (48 сағат жарамды) немесе өзіңіз қойған құпиясөз.',
@@ -32,7 +32,7 @@
         current:'Ағымдағы құпиясөз қате.',weak:'Жаңа құпиясөз: кемінде 6 таңба, басында және соңында бос орынсыз.',auth:'Сессия аяқталды, қайта кіріңіз.',
         rate_limited:'Сұраулар тым көп. Біраз күтіңіз.',mail:'Хат жіберілмеді. Кейінірек қайталаңыз.',unavailable:'Қызмет уақытша қолжетімсіз. Бірнеше минуттан кейін қайталаңыз.',
         net:'Байланыс жоқ. Интернетті тексеріп, қайталаңыз.',def:'Қате орын алды. Кейінірек қайталаңыз.'}},
-    en:{back:'Back to home',title:'Olympiad results',sub:'Enter the e-mail you gave at registration. We\'ll e-mail you a password for your results account with the participation certificate.',
+    en:{back:'Back to home',title:'Olympiad results',sub:'Enter the e-mail you gave at registration. We\'ll e-mail you a password for your results account.',
       email:'E-mail',ph:'name@example.com',getpw:'Get password',havepw:'I already have a password',
       pw:'Password',login:'Sign in',sent:'If {e} is on the participant list, the password is on its way: the e-mail arrives within a couple of minutes. Check your Spam folder. Nothing came? Check the address or write to info@az-group.kz.',
       loginsub:'Your login is your e-mail. The password is the 6 digits from the e-mail (valid for 48 hours) or your own one, if you set it.',
@@ -181,6 +181,9 @@
     state.data=r;state.email=r.email;$('#pUser').value=r.email;show('cab');return true;
   }
 
+  // The certificate is switched off until the new design arrives; drawCert/canvasPdf stay for it.
+  const SHOW_CERT=false;
+
   /* ---------- cabinet ---------- */
   function renderCab(){
     const d=state.data;if(!d)return;
@@ -191,17 +194,18 @@
       const g=gradeNum(p.grade);
       const meta=[g&&t('grade',{g}),p.school,p.city].filter(Boolean).map(esc).join(' · ');
       const cl=p._cl||p.lang||lang;
-      return `<article class="person" data-i="${i}">
+      return `<article class="person${SHOW_CERT?'':' no-cert'}" data-i="${i}">
         <div class="p-info"><div class="p-head"><div><h2>${esc(p.name)}</h2>${meta?`<p class="muted">${meta}</p>`:''}</div>
         <div class="score"><span>${esc(t('score'))}</span><b>${esc(num(p.score,lang))}</b><small>${esc(ptsWord(p.score,lang))}</small></div></div>
         <dl class="facts">${p.stage?`<div><dt>${esc(t('stage'))}</dt><dd>${esc(p.stage)}</dd></div>`:''}${p.code?`<div><dt>${esc(t('code'))}</dt><dd>${esc(p.code)}</dd></div>`:''}</dl></div>
-        <div class="cert">
+        ${SHOW_CERT?`<div class="cert">
           <div class="cert-bar"><h3>${esc(t('cert'))}</h3>
             <div class="seg" role="group" aria-label="${esc(t('certlang'))}">${['kk','ru','en'].map(l=>`<button type="button" data-cl="${l}" class="${l===cl?'on':''}" aria-pressed="${l===cl}">${l==='kk'?'KZ':l.toUpperCase()}</button>`).join('')}</div></div>
           <div class="cert-img"><img alt="${esc(t('cert'))}: ${esc(p.name)}" hidden><span class="muted">${esc(t('making'))}</span></div>
           <div class="cert-dl"><button type="button" class="b b-red" data-pdf>${dlIcon}${esc(t('dl'))}</button><button type="button" class="b" data-png>${esc(t('dlpng'))}</button></div>
-        </div></article>`;
+        </div>`:''}</article>`;
     }).join('');
+    if(!SHOW_CERT)return;
     box.querySelectorAll('.person').forEach(el=>{
       const p=d.participants[+el.dataset.i];
       const cl=()=>p._cl||p.lang||lang;
