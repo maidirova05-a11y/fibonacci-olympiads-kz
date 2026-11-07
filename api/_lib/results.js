@@ -7,7 +7,9 @@
      res:p:<email>     JSON array of participants for this parent e-mail (written by the import)
      res:index         JSON array of all imported e-mails (lets a re-import remove old ones)
      res:acct:<email>  account { h, v, custom, t } — the password the parent signs in with
-     res:otp:<email>   { h, t } — the last mailed 6-digit code; lives 48 h, 10 tries, then gone.
+     res:otp:<email>   { codes: [{ h, t }] } — the last 3 mailed 6-digit codes (newest first); lives 48 h from the
+                       latest letter, 10 tries shared by all of them, then gone. Several stay valid because mail
+                       apps group identical letters and parents often type the code from an earlier one.
                        It replaces the account password only when somebody signs in with it, so a
                        stranger who requests a code cannot reset or sign out the parent.
      res:otptry:<e>    sign-in attempts against the current code
@@ -32,6 +34,7 @@ const FAIL_LIMIT = 10; // wrong passwords per address per window
 const FAIL_WINDOW_SEC = 30 * 60;
 const OTP_TTL_SEC = 48 * 3600;
 const OTP_TRIES = 10;
+const OTP_KEEP = 3; // codes from the last three letters are accepted
 const DUMMY_HASH = 'AAAAAAAAAAAAAAAAAAAAAA==:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
 const IP_LIMITS = { request: [10, 60 * 60 * 1000], login: [30, 10 * 60 * 1000], default: [60, 10 * 60 * 1000] };
 
@@ -84,6 +87,9 @@ async function session(req, cfg) {
 
 /* ---------- actions ---------- */
 
+// Stored codes, newest first; also reads the older single-code shape { h, t }.
+const otpCodes = (o) => (!o ? [] : Array.isArray(o.codes) ? o.codes.filter((c) => c && c.h) : o.h ? [{ h: o.h, t: o.t }] : []);
+
 // E-mail tag for logs: keyed with the session secret, so it cannot be matched against the sheet.
 const tag = (cfg, email) => crypto.createHmac('sha256', cfg.secret).update(email).digest('hex').slice(0, 12);
 
@@ -111,7 +117,8 @@ async function requestPassword(req, res, ctx, b, cfg) {
   }
 
   const code = auth.newPassword();
-  const otp = { h: await auth.hashPassword(code), t: new Date().toISOString() };
+  const prevCodes = otpCodes(readJson(await db.get(key.otp(email))));
+  const otp = { codes: [{ h: await auth.hashPassword(code), t: new Date().toISOString() }, ...prevCodes].slice(0, OTP_KEEP) };
   try {
     await mailer.send(cfg.mail, email, mailer.passwordLetter(email, code, lang));
   } catch (e) {
@@ -139,10 +146,13 @@ async function checkPassword(db, email, password) {
   }
   // A locked account can still be opened with a fresh code from the mail, so a stranger who keeps
   // the account locked cannot keep the parent out; the code has its own small budget of tries.
-  const otp = readJson(await db.get(key.otp(email)));
-  if (otp) {
+  const codes = otpCodes(readJson(await db.get(key.otp(email))));
+  if (codes.length) {
     const tries = await db.incr(key.otpTry(email), OTP_TTL_SEC);
-    if (tries <= OTP_TRIES && (await auth.verifyPassword(password, otp.h))) {
+    let hit = null;
+    if (tries <= OTP_TRIES) for (const c of codes) if (await auth.verifyPassword(password, c.h)) { hit = c; break; }
+    if (hit) {
+      const otp = hit;
       const now = new Date().toISOString();
       const next = { h: otp.h, v: auth.newVersion(), custom: false, t: now, created: acct?.created || now };
       await db.set(key.acct(email), JSON.stringify(next));
