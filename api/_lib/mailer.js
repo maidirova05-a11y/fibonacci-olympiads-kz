@@ -14,9 +14,9 @@ const TEXT = {
     body: 'Вы запросили доступ к результатам олимпиады Fibonacci International Maths Olympiad.',
     login: 'Логин',
     pass: 'Пароль',
-    hint: 'Войдите на странице результатов. Пароль можно сменить в личном кабинете.',
+    hint: 'Пароль действует 48 часов. Войдите с ним на странице результатов, затем при желании задайте свой пароль в личном кабинете.',
     btn: 'Открыть результаты',
-    ignore: 'Если вы не запрашивали пароль, просто проигнорируйте это письмо.',
+    ignore: 'Если вы не запрашивали пароль, просто проигнорируйте письмо: ваш текущий пароль продолжит работать.',
   },
   kk: {
     subject: 'Жеке кабинетке кіру құпиясөзі — Fibonacci Olympiad',
@@ -24,9 +24,9 @@ const TEXT = {
     body: 'Сіз Fibonacci International Maths Olympiad нәтижелеріне қол жеткізуді сұрадыңыз.',
     login: 'Логин',
     pass: 'Құпиясөз',
-    hint: 'Нәтижелер бетінде кіріңіз. Құпиясөзді жеке кабинетте өзгертуге болады.',
+    hint: 'Құпиясөз 48 сағат жарамды. Нәтижелер бетінде осы құпиясөзбен кіріңіз, кейін жеке кабинетте өз құпиясөзіңізді қоюға болады.',
     btn: 'Нәтижелерді ашу',
-    ignore: 'Егер сіз құпиясөз сұрамаған болсаңыз, бұл хатты елемеңіз.',
+    ignore: 'Егер сіз құпиясөз сұрамаған болсаңыз, бұл хатты елемеңіз: қазіргі құпиясөзіңіз жұмыс істей береді.',
   },
   en: {
     subject: 'Your sign-in password — Fibonacci Olympiad',
@@ -34,9 +34,9 @@ const TEXT = {
     body: 'You requested access to the Fibonacci International Maths Olympiad results.',
     login: 'Login',
     pass: 'Password',
-    hint: 'Sign in on the results page. You can change the password in your account.',
+    hint: 'The password is valid for 48 hours. Sign in with it on the results page; you can then set your own password in your account.',
     btn: 'Open results',
-    ignore: 'If you did not request a password, just ignore this email.',
+    ignore: 'If you did not request a password, just ignore this e-mail: your current password keeps working.',
   },
 };
 
@@ -50,7 +50,7 @@ function passwordLetter(email, password, lang) {
   const html = `<!doctype html><html><body style="margin:0;background:#F4F2EF;font-family:Arial,Helvetica,sans-serif;color:#0E0E0E">
 <div style="max-width:520px;margin:0 auto;padding:32px 20px">
 <div style="background:#fff;border:1px solid #E6E1DA;border-radius:16px;padding:28px">
-<p style="margin:0 0 6px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#6E6860">Fibonacci International Maths Olympiad</p>
+<p style="margin:0 0 6px;font-size:13px;color:#6E6860">Fibonacci International Maths Olympiad</p>
 <p style="margin:0 0 14px;font-size:16px">${esc(t.hi)}</p>
 <p style="margin:0 0 18px;font-size:15px;line-height:1.5">${esc(t.body)}</p>
 <table style="border-collapse:collapse;margin:0 0 18px;font-size:15px">

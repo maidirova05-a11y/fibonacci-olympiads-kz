@@ -112,11 +112,11 @@ test('full flow: request → login → me → change password → old password f
   assert.match(r.headers['set-cookie'], /Max-Age=0/);
 });
 
-test('only e-mails from the sheet get a password', async () => {
+test('only e-mails from the sheet get a letter; the answer does not tell which are there', async () => {
   const r = await call('request', { email: 'stranger@mail.ru' });
-  assert.equal(r.status, 404);
-  assert.equal(r.body.error, 'not_found');
+  assert.equal(r.status, 200);
   assert.equal(mails.length, 0);
+  assert.equal((await call('login', { email: 'stranger@mail.ru', password: '123456' })).status, 401);
   assert.equal((await call('request', { email: 'not-an-email' })).body.error, 'email');
 });
 
@@ -134,7 +134,7 @@ test('password e-mail: once a minute, five a day; letter in the chosen language'
   assert.equal((await call('request', { email: 'parent@mail.ru' }, { ip: '8.8.8.8' })).body.error, 'mail_daily');
 });
 
-test('a new password e-mail replaces the old password', async () => {
+test('the latest code works; requesting a code does not reset the own password of the parent', async () => {
   await call('request', { email: 'parent@mail.ru' });
   const first = lastPassword();
   await db.del(results.key.mailGap('parent@mail.ru'));
@@ -142,6 +142,60 @@ test('a new password e-mail replaces the old password', async () => {
   const second = lastPassword();
   if (first !== second) assert.equal((await call('login', { email: 'parent@mail.ru', password: first })).status, 401);
   assert.equal((await call('login', { email: 'parent@mail.ru', password: second })).status, 200);
+  assert.equal((await call('change', { current: second, password: 'mysecret' })).status, 200);
+  const session = cookie;
+
+  // a stranger requests a new code: the parent's password and session keep working
+  await db.del(results.key.mailGap('parent@mail.ru'));
+  assert.equal((await call('request', { email: 'parent@mail.ru' }, { cookie: '' })).status, 200);
+  const third = lastPassword();
+  assert.equal((await call('me', {}, { cookie: session })).status, 200);
+  cookie = '';
+  assert.equal((await call('login', { email: 'parent@mail.ru', password: 'mysecret' })).status, 200);
+  // the code itself is single-use: after signing in with it, it is gone and becomes the password
+  cookie = '';
+  await db.del(results.key.mailGap('parent@mail.ru'));
+  await call('request', { email: 'parent@mail.ru' });
+  const fourth = lastPassword();
+  if (third !== fourth) assert.equal((await call('login', { email: 'parent@mail.ru', password: third })).status, 401);
+  assert.equal((await call('login', { email: 'parent@mail.ru', password: fourth })).status, 200);
+  assert.equal((await call('me', {}, { cookie: session })).status, 401, 'old sessions end once the code is used');
+});
+
+test('parallel requests send one letter', async () => {
+  const rs = await Promise.all([1, 2, 3, 4, 5].map((i) => call('request', { email: 'parent@mail.ru' }, { ip: '7.7.7.' + i })));
+  assert.equal(rs.filter((r) => r.status === 200).length, 1);
+  assert.equal(mails.length, 1);
+});
+
+test('parallel wrong guesses cannot get past the limit', async () => {
+  await call('request', { email: 'parent@mail.ru' });
+  const pw = lastPassword();
+  await call('login', { email: 'parent@mail.ru', password: pw });
+  assert.equal((await call('change', { current: pw, password: 'mysecret' })).status, 200);
+  cookie = '';
+  const rs = await Promise.all(Array.from({ length: 30 }, (_, i) => call('login', { email: 'parent@mail.ru', password: 'guess' + i }, { ip: '4.4.' + i + '.1' })));
+  assert.equal(rs.filter((r) => r.status === 401).length, results.limits.FAIL_LIMIT);
+  assert.equal(rs.filter((r) => r.body.error === 'locked').length, 30 - results.limits.FAIL_LIMIT);
+  // locked: even the right password waits, but a fresh code from the mail opens the account
+  assert.equal((await call('login', { email: 'parent@mail.ru', password: 'mysecret' })).body.error, 'locked');
+  await db.del(results.key.mailGap('parent@mail.ru'));
+  await call('request', { email: 'parent@mail.ru' });
+  assert.equal((await call('login', { email: 'parent@mail.ru', password: lastPassword() })).status, 200);
+});
+
+test('a mailed code is burnt after ten wrong tries', async () => {
+  await call('request', { email: 'parent@mail.ru' });
+  const pw = lastPassword();
+  for (let i = 0; i < results.limits.OTP_TRIES; i++) await call('login', { email: 'parent@mail.ru', password: 'x' + i });
+  assert.notEqual((await call('login', { email: 'parent@mail.ru', password: pw })).status, 200);
+});
+
+test('addresses removed from the sheet cannot sign in', async () => {
+  await call('request', { email: 'parent@mail.ru' });
+  const pw = lastPassword();
+  await db.del(results.key.people('parent@mail.ru'));
+  assert.equal((await call('login', { email: 'parent@mail.ru', password: pw })).status, 401);
 });
 
 test('failed mail keeps the previous password working', async () => {
@@ -150,6 +204,7 @@ test('failed mail keeps the previous password working', async () => {
   await db.del(results.key.mailGap('parent@mail.ru'));
   mailer.send = async () => { throw new Error('down'); };
   assert.equal((await call('request', { email: 'parent@mail.ru' })).status, 502);
+  assert.equal(await db.get(results.key.mailGap('parent@mail.ru')), null, 'a failed letter frees the one-minute slot');
   assert.equal((await call('login', { email: 'parent@mail.ru', password: pw })).status, 200);
 });
 

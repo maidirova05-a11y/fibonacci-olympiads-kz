@@ -33,6 +33,8 @@ function redisStore({ url, token }) {
     get: (k) => one('GET', k),
     set: (k, v, ttlSec) => (ttlSec ? one('SET', k, v, 'EX', String(ttlSec)) : one('SET', k, v)),
     del: (...keys) => (keys.length ? one('DEL', ...keys) : 0),
+    // Atomic "take the slot": true only for the first caller until the key expires.
+    setnx: async (k, v, ttlSec) => (await one('SET', k, v, 'NX', 'EX', String(ttlSec))) === 'OK',
     // INCR + set the expiry only on the first hit, so the window is fixed from the first attempt.
     incr: async (k, ttlSec) => {
       const [n] = await pipeline([['INCR', k], ['EXPIRE', k, String(ttlSec), 'NX']]);
@@ -72,6 +74,13 @@ function fileStore(file) {
       for (const k of keys) if (live(db, k)) { delete db[k]; n++; }
       save(db);
       return n;
+    },
+    setnx: async (k, v, ttlSec) => {
+      const db = load();
+      if (live(db, k)) return false;
+      db[k] = { v: String(v), x: Date.now() + ttlSec * 1000 };
+      save(db);
+      return true;
     },
     incr: async (k, ttlSec) => {
       const db = load();

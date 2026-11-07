@@ -48,10 +48,18 @@ optional `BITRIX_DEAL_CATEGORY_ID` (digits or `lead`), `BITRIX_DEAL_STAGE_ID`, `
 
 ## Results cabinet (`api/results/*`, Fibonacci only)
 
-Flow: `/results` → parent enters the e-mail → `request-password` checks it against the imported results and mails a
-fresh 6-digit password (it becomes the account password) → `login` (login = e-mail) sets an HttpOnly, SameSite=Strict
-cookie scoped to `/api/results` (7 days, HMAC-signed) → `me` returns the participants for that e-mail → the browser
-draws the certificate (canvas → PDF/PNG) → `change-password` (needs the current one; signs out other sessions) → `logout`.
+Flow: `/results` → parent enters the e-mail → `request-password` mails a 6-digit code if the address is in the imported
+results (the answer is the same 200 for any address, so the page cannot be used to check who took part) → `login`
+(login = e-mail) accepts the account password or the code; signing in with the code makes it the account password and
+signs out other sessions → HttpOnly, SameSite=Strict cookie scoped to `/api/results` (7 days, HMAC-signed) → `me`
+returns the participants for that e-mail → the browser draws the certificate (canvas → PDF/PNG) → `change-password`
+(needs the current one; signs out other sessions) → `logout`.
+
+Protection: the code lives 48 h and allows 10 tries, then it is deleted; requesting a code never changes the existing
+password, so a stranger cannot reset or sign out a parent. Wrong passwords are counted *before* the check (parallel
+requests cannot slip past): 10 per e-mail per 30 min, then `locked` — a fresh code from the mail still opens a locked
+account. Wrong "current password" in `change-password` counts against the same limit. The one-letter-per-minute slot is
+taken atomically (`SET NX EX`), the daily counter before sending. Logs carry an HMAC tag of the e-mail, never the address.
 All endpoints follow the rules above (POST only, Origin check = CSRF protection, JSON ≤ 4 KB). Code: `api/_lib/results.js`
 (flow), `auth.js` (scrypt hashes, sessions), `store.js` (Upstash Redis REST), `mailer.js` (Resend).
 
@@ -61,10 +69,9 @@ city, stage date, language — no phones, IIN or teacher data.
 
 | Status | `error` | Meaning |
 |---|---|---|
-| 400 | `email`, `password`, `current`, `weak` | invalid field / wrong current password / new password < 6 chars |
+| 400 | `email`, `password`, `current`, `weak` | invalid field / wrong current password / new password < 6 chars or edge spaces |
 | 401 | `credentials`, `auth` | wrong e-mail or password / no or expired session |
-| 404 | `not_found` | e-mail is not in the results |
-| 429 | `mail_wait`, `mail_daily`, `locked`, `rate_limited` | 1 letter/min and 5/day per e-mail; 10 wrong passwords per e-mail → 30 min lock; per-address limits |
+| 429 | `mail_wait`, `mail_daily`, `locked`, `rate_limited` | 1 letter/min and 5/day per e-mail; 10 wrong passwords per e-mail → 30 min lock (a new code still works); per-address limits |
 | 502 / 503 | `mail`, `unavailable` | Resend / store failed |
 
 Env (Vercel → Settings → Environment Variables):
@@ -79,7 +86,8 @@ Env (Vercel → Settings → Environment Variables):
 Loading results: `vercel env pull .env.local`, then `npm run import-results -- "Результаты.xlsx"` (add `--dry` to only
 check the sheet, `--add "ФИО|email|балл"` for an extra row). Columns are found by header (`Код участника`, `ФИО`,
 `Результат`, `Город`, `Школа`, `Явка`, `Класс`, `Почта`, `Язык`); the stage date is the `17.10.2026, Астана` cell.
-Re-importing replaces all results; accounts and passwords stay. Without the Upstash env the import writes to
+Re-importing replaces all results; accounts and passwords stay, except for addresses no longer in the sheet: their
+results, account and pending code are deleted. Without the Upstash env the import writes to
 `.data/dev-store.json` for `npm run dev`.
 
 ## Tests

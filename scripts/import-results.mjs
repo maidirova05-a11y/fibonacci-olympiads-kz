@@ -101,8 +101,11 @@ if (dry) process.exit(0);
 const db = store.get();
 if (!db) { console.error('no store: set UPSTASH_REDIS_REST_URL/TOKEN (or KV_REST_API_URL/TOKEN)'); process.exit(1); }
 const old = JSON.parse((await db.get('res:index')) || '[]');
+// Index first (old ∪ new): an interrupted import never leaves keys the next run does not know about.
+await db.set('res:index', JSON.stringify([...new Set([...old, ...byEmail.keys()])]));
 for (const [email, list] of byEmail) await db.set(key.people(email), JSON.stringify(list));
 const gone = old.filter((e) => !byEmail.has(e));
-if (gone.length) await db.del(...gone.map(key.people));
+// Addresses no longer in the sheet lose their results, account (so sessions) and pending code.
+if (gone.length) await db.del(...gone.flatMap((e) => [key.people(e), key.acct(e), key.otp(e), key.otpTry(e)]));
 await db.set('res:index', JSON.stringify([...byEmail.keys()]));
 console.log(`записано в ${db.kind === 'redis' ? 'Upstash Redis' : '.data/dev-store.json'}; удалено старых адресов: ${gone.length}`);

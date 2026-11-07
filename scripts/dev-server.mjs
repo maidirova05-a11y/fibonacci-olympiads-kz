@@ -37,8 +37,9 @@ http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     let p = decodeURIComponent(url.pathname);
     if (p.startsWith('/api/')) {
-      const f = join(root, normalize(p).replace(/^[\\/]+/, '') + '.js');
-      if (!p.includes('/_') && existsSync(f)) return await api(req, res, f);
+      // only api/<name> or api/<dir>/<name> (letters, digits, dashes): no "_" helpers, no "..", no "\"
+      const f = join(root, p.slice(1) + '.js');
+      if (/^\/api(\/[a-z0-9-]+){1,2}$/i.test(p) && existsSync(f)) return await api(req, res, f);
       res.statusCode = 404; return res.end('not found');
     }
     for (const h of globalHeaders) res.setHeader(h.key, h.value);
@@ -53,4 +54,4 @@ http.createServer(async (req, res) => {
     console.error(e);
     if (!res.headersSent) { res.statusCode = 500; res.end('error'); }
   }
-}).listen(port, () => console.log(`dev server: http://localhost:${port}/results`));
+}).listen(port, '127.0.0.1', () => console.log(`dev server: http://localhost:${port}/results`));
