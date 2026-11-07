@@ -112,6 +112,7 @@
     document.querySelectorAll('.lang button').forEach(b=>{const on=b.dataset.lang===lang;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
     document.querySelectorAll('[data-view]').forEach(e=>e.hidden=e.dataset.view!==state.view);
     $('.r-head .sub').hidden=state.view!=='request';
+    $('main').classList.toggle('v-cab',state.view==='cab');
     root.lang=lang;document.title=t('title')+' — Fibonacci 2026–2027';
     ['#rMsg','#lMsg','#pMsg'].forEach(s=>paint($(s)));
     if(state.view==='login'){if(state.email)$('#lEmail').value=state.email;tickResend()}
@@ -191,9 +192,9 @@
       const meta=[g&&t('grade',{g}),p.school,p.city].filter(Boolean).map(esc).join(' · ');
       const cl=p._cl||p.lang||lang;
       return `<article class="person" data-i="${i}">
-        <div class="p-head"><div><h2>${esc(p.name)}</h2>${meta?`<p class="muted">${meta}</p>`:''}</div>
+        <div class="p-info"><div class="p-head"><div><h2>${esc(p.name)}</h2>${meta?`<p class="muted">${meta}</p>`:''}</div>
         <div class="score"><span>${esc(t('score'))}</span><b>${esc(num(p.score,lang))}</b><small>${esc(ptsWord(p.score,lang))}</small></div></div>
-        <dl class="facts">${p.stage?`<div><dt>${esc(t('stage'))}</dt><dd>${esc(p.stage)}</dd></div>`:''}${p.code?`<div><dt>${esc(t('code'))}</dt><dd>${esc(p.code)}</dd></div>`:''}</dl>
+        <dl class="facts">${p.stage?`<div><dt>${esc(t('stage'))}</dt><dd>${esc(p.stage)}</dd></div>`:''}${p.code?`<div><dt>${esc(t('code'))}</dt><dd>${esc(p.code)}</dd></div>`:''}</dl></div>
         <div class="cert">
           <div class="cert-bar"><h3>${esc(t('cert'))}</h3>
             <div class="seg" role="group" aria-label="${esc(t('certlang'))}">${['kk','ru','en'].map(l=>`<button type="button" data-cl="${l}" class="${l===cl?'on':''}" aria-pressed="${l===cl}">${l==='kk'?'KZ':l.toUpperCase()}</button>`).join('')}</div></div>
