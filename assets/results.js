@@ -8,7 +8,7 @@
       loginsub:'Логин — ваша почта. Пароль — 6 цифр из письма (действует 48 часов) или ваш собственный, если вы его задали.',
       resend:'Отправить пароль ещё раз',resendin:'Повторно через {s} с',other:'Другая почта',
       cab:'Личный кабинет',logout:'Выйти',score:'Результат',pts:['балл','балла','баллов'],grade:'{g} класс',stage:'Дата и место',code:'Код участника',
-      cert:'Сертификат участника',certlang:'Язык сертификата',dl:'Скачать PDF',dlpng:'Скачать изображение',making:'Готовим сертификат…',
+      cert:'Сертификат участника',dl:'Скачать PDF',dlpng:'Скачать изображение',making:'Готовим сертификат…',
       chg:'Сменить пароль',cur:'Текущий пароль',np:'Новый пароль',np2:'Повторите новый пароль',save:'Сохранить пароль',saved:'Пароль изменён. Теперь входите с новым паролем.',
       pwhint:'Не короче 6 символов, без пробелов в начале и в конце.',mismatch:'Пароли не совпадают.',none:'Для этой почты пока нет результатов.',
       err:{email:'Проверьте адрес почты.',
@@ -23,7 +23,7 @@
       loginsub:'Логин — поштаңыз. Құпиясөз — хаттағы 6 таңбалы құпиясөз (48 сағат жарамды) немесе өзіңіз қойған құпиясөз.',
       resend:'Құпиясөзді қайта жіберу',resendin:'{s} секундтан кейін қайта жіберуге болады',other:'Басқа пошта',
       cab:'Жеке кабинет',logout:'Шығу',score:'Нәтиже',pts:['ұпай','ұпай','ұпай'],grade:'{g}-сынып',stage:'Өткізілген күні мен орны',code:'Қатысушы коды',
-      cert:'Қатысушы сертификаты',certlang:'Сертификат тілі',dl:'PDF жүктеу',dlpng:'Суретті жүктеу',making:'Сертификат дайындалуда…',
+      cert:'Қатысушы сертификаты',dl:'PDF жүктеу',dlpng:'Суретті жүктеу',making:'Сертификат дайындалуда…',
       chg:'Құпиясөзді өзгерту',cur:'Ағымдағы құпиясөз',np:'Жаңа құпиясөз',np2:'Жаңа құпиясөзді қайталаңыз',save:'Сақтау',saved:'Құпиясөз өзгертілді. Енді жаңа құпиясөзбен кіріңіз.',
       pwhint:'Кемінде 6 таңба, басында және соңында бос орынсыз.',mismatch:'Құпиясөздер сәйкес емес.',none:'Бұл пошта үшін әзірге нәтиже жоқ.',
       err:{email:'Пошта мекенжайын тексеріңіз.',
@@ -38,7 +38,7 @@
       loginsub:'Your login is your e-mail. The password is the 6 digits from the e-mail (valid for 48 hours) or your own one, if you set it.',
       resend:'Send the password again',resendin:'Resend in {s} s',other:'Use another e-mail',
       cab:'Your account',logout:'Sign out',score:'Score',pts:['point','points','points'],grade:'Grade {g}',stage:'Date and place',code:'Participant code',
-      cert:'Participation certificate',certlang:'Certificate language',dl:'Download PDF',dlpng:'Download image',making:'Preparing the certificate…',
+      cert:'Participation certificate',dl:'Download PDF',dlpng:'Download image',making:'Preparing the certificate…',
       chg:'Change password',cur:'Current password',np:'New password',np2:'Confirm new password',save:'Save password',saved:'Password changed. Use the new password next time.',
       pwhint:'At least 6 characters, no spaces at the start or end.',mismatch:'The passwords do not match.',none:'There are no results for this e-mail yet.',
       err:{email:'Check the e-mail address.',
@@ -56,22 +56,6 @@
   function plural(n,f){if(!Number.isInteger(Number(n)))return f[1];n=Math.abs(n)%100;const d=n%10;if(n>10&&n<20)return f[2];if(d>1&&d<5)return f[1];if(d===1)return f[0];return f[2]}
   const ptsWord=(n,l)=>l==='ru'?plural(n,UI.ru.pts):l==='en'?(Number(n)===1?'point':'points'):'ұпай';
 
-  // Certificate wording per language (the participant's language of participation is the default).
-  const CERT={
-    ru:{t1:'СЕРТИФИКАТ',t2:'участника',award:'вручается',grade:g=>g+' класс',
-      body:['за участие в республиканском этапе','Международной олимпиады по математике «Fibonacci»'],
-      season:'Республиканский этап 2026–2027',score:'Результат',stage:'Дата и место проведения',code:'Код участника',
-      rep:'Официальный представитель в Республике Казахстан — ТОО «AZ GROUP»'},
-    kk:{t1:'ҚАТЫСУШЫ',t2:'сертификаты',award:'',grade:g=>g+'-сынып',
-      body:['Fibonacci халықаралық математика олимпиадасының','республикалық кезеңіне қатысқаны үшін беріледі'],
-      season:'Республикалық кезең 2026–2027',score:'Нәтиже',stage:'Өткізілген күні мен орны',code:'Қатысушы коды',
-      rep:'Қазақстан Республикасындағы ресми өкіл — «AZ GROUP» ЖШС'},
-    en:{t1:'CERTIFICATE',t2:'of participation',award:'is awarded to',grade:g=>'Grade '+g,
-      body:['for taking part in the National Stage of the','Fibonacci International Maths Olympiad'],
-      season:'National Stage 2026–2027',score:'Score',stage:'Date and place',code:'Participant code',
-      rep:'Official representative in the Republic of Kazakhstan — AZ GROUP LLC'}
-  };
-  for(const l in CERT)CERT[l].pts=n=>num(n,l)+' '+ptsWord(n,l);
 
   const root=document.documentElement,key=root.dataset.store;
   const $=s=>document.querySelector(s);
@@ -181,9 +165,6 @@
     state.data=r;state.email=r.email;$('#pUser').value=r.email;show('cab');return true;
   }
 
-  // The certificate is switched off until the new design arrives; drawCert/canvasPdf stay for it.
-  const SHOW_CERT=false;
-
   /* ---------- cabinet ---------- */
   function renderCab(){
     const d=state.data;if(!d)return;
@@ -193,112 +174,63 @@
     box.innerHTML=d.participants.map((p,i)=>{
       const g=gradeNum(p.grade);
       const meta=[g&&t('grade',{g}),p.school,p.city].filter(Boolean).map(esc).join(' · ');
-      const cl=p._cl||p.lang||lang;
-      return `<article class="person${SHOW_CERT?'':' no-cert'}" data-i="${i}">
+      return `<article class="person" data-i="${i}">
         <div class="p-info"><div class="p-head"><div><h2>${esc(p.name)}</h2>${meta?`<p class="muted">${meta}</p>`:''}</div>
         <div class="score"><span>${esc(t('score'))}</span><b>${esc(num(p.score,lang))}</b><small>${esc(ptsWord(p.score,lang))}</small></div></div>
         <dl class="facts">${p.stage?`<div><dt>${esc(t('stage'))}</dt><dd>${esc(p.stage)}</dd></div>`:''}${p.code?`<div><dt>${esc(t('code'))}</dt><dd>${esc(p.code)}</dd></div>`:''}</dl></div>
-        ${SHOW_CERT?`<div class="cert">
-          <div class="cert-bar"><h3>${esc(t('cert'))}</h3>
-            <div class="seg" role="group" aria-label="${esc(t('certlang'))}">${['kk','ru','en'].map(l=>`<button type="button" data-cl="${l}" class="${l===cl?'on':''}" aria-pressed="${l===cl}">${l==='kk'?'KZ':l.toUpperCase()}</button>`).join('')}</div></div>
+        <div class="cert">
+          <div class="cert-bar"><h3>${esc(t('cert'))}</h3></div>
           <div class="cert-img"><img alt="${esc(t('cert'))}: ${esc(p.name)}" hidden><span class="muted">${esc(t('making'))}</span></div>
           <div class="cert-dl"><button type="button" class="b b-red" data-pdf>${dlIcon}${esc(t('dl'))}</button><button type="button" class="b" data-png>${esc(t('dlpng'))}</button></div>
-        </div>`:''}</article>`;
+        </div></article>`;
     }).join('');
-    if(!SHOW_CERT)return;
     box.querySelectorAll('.person').forEach(el=>{
       const p=d.participants[+el.dataset.i];
-      const cl=()=>p._cl||p.lang||lang;
-      let seq=0;
-      // Previews are drawn small (1200 px wide) and cached per language; the full 300 dpi page is drawn only to download.
-      const preview=async()=>{
-        const l=cl(),my=++seq,img=el.querySelector('.cert-img img'),box=el.querySelector('.cert-img');
-        p._prev=p._prev||{};
-        if(!p._prev[l]){box.classList.add('loading');const c=await drawCert(p,l,PREVIEW);p._prev[l]=c.toDataURL('image/jpeg',.85);free(c)}
-        if(my!==seq)return; // a newer language was picked meanwhile
-        box.classList.remove('loading');img.src=p._prev[l];img.hidden=false;el.querySelector('.cert-img span').hidden=true;
-      };
-      el.querySelectorAll('[data-cl]').forEach(b=>b.addEventListener('click',()=>{p._cl=b.dataset.cl;el.querySelectorAll('[data-cl]').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on)});preview()}));
-      const dl=async(e,kind)=>{const b=e.currentTarget;busy(b,true);let c;try{c=await drawCert(p,cl(),1);save(kind==='pdf'?await canvasPdf(c):await new Promise(r=>c.toBlob(r,'image/png')),fileName(p,cl(),kind))}finally{if(c)free(c);busy(b,false)}};
+      // The preview is drawn small (1200 px wide) once; the full 300 dpi page is drawn only to download.
+      (async()=>{
+        const img=el.querySelector('.cert-img img'),wrap=el.querySelector('.cert-img');
+        wrap.classList.add('loading');
+        try{if(!p._prev){const c=await drawCert(p,PREVIEW);p._prev=c.toDataURL('image/jpeg',.85);free(c)}img.src=p._prev;img.hidden=false;el.querySelector('.cert-img span').hidden=true}
+        catch(e){el.querySelector('.cert-img span').textContent=t('err').def}
+        finally{wrap.classList.remove('loading')}
+      })();
+      const dl=async(e,kind)=>{const b=e.currentTarget;busy(b,true);let c;try{c=await drawCert(p,1);save(kind==='pdf'?await canvasPdf(c):await new Promise(r=>c.toBlob(r,'image/png')),fileName(p,kind))}catch(e){alert(t('err').def)}finally{if(c)free(c);busy(b,false)}};
       el.querySelector('[data-pdf]').addEventListener('click',e=>dl(e,'pdf'));
       el.querySelector('[data-png]').addEventListener('click',e=>dl(e,'png'));
-      preview();
     });
   }
   const dlIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>';
-  const fileName=(p,l,ext)=>('Fibonacci-certificate-'+p.name.replace(/[^\p{L}\d]+/gu,'-').replace(/^-|-$/g,'')+'-'+l+'.'+ext);
+  const fileName=(p,ext)=>('Fibonacci-certificate-'+p.name.replace(/[^\p{L}\d]+/gu,'-').replace(/^-|-$/g,'')+'.'+ext);
   // iOS may open the download sheet slowly: keep the object URL alive for a while.
   function save(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},30000)}
   const free=c=>{c.width=c.height=0}; // give the canvas memory back at once (iOS caps the total)
 
-  /* ---------- certificate: canvas (A4 landscape) → JPEG → one-page PDF ---------- */
+  /* ---------- certificate: the approved design (A4 landscape, 300 dpi) + the participant's name → JPEG → one-page PDF ----------
+     The background is the designer's PDF rendered as is (assets/img/certificate-bg*.jpg); only the name is drawn,
+     exactly as it stands in the results list, centred above the design's name line. */
   const W=3508,H=2480,PREVIEW=1200/W; // A4 at 300 dpi; previews at 1200 px wide
+  const NAME={cx:1725,line:963,max:1900,size:150,min:64,color:'#00603E'}; // line: 822–2627 px at y 963 (from the PDF)
   const imgCache={};
-  const loadImg=src=>imgCache[src]||(imgCache[src]=new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=src}));
-  const HEAD="'Roboto Slab',Georgia,serif",SANS="'Manrope',system-ui,sans-serif";
-  const FONTS=['800 100px '+HEAD,'700 100px '+HEAD,'600 100px '+HEAD,'700 100px '+SANS,'600 100px '+SANS,'500 100px '+SANS];
+  const loadImg=src=>imgCache[src]||(imgCache[src]=new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=()=>{delete imgCache[src];no(new Error('img'))};i.src=src}));
+  const HEAD="'Roboto Slab',Georgia,serif";
 
-  async function drawCert(p,l,scale){
-    const T=CERT[l]||CERT.ru;
-    const g=gradeNum(p.grade);
-    const sub=[g&&T.grade(g),p.school,p.city].filter(Boolean).join(' · ');
-    const all=[T.t1,T.t2,T.award,p.name,sub,...T.body,T.season,T.score,T.pts(p.score),T.stage,p.stage,T.code,p.code,T.rep].join(' ');
-    // every face used below, with the exact characters, so the canvas never falls back to a system font
-    try{await Promise.all(FONTS.map(f=>document.fonts.load(f,all)))}catch(e){}
-    const [logo,az]=await Promise.all([loadImg('/assets/img/fibonacci-logo.png'),loadImg('/assets/img/azgroup-dark.png')]).catch(()=>[null,null]);
-
+  async function drawCert(p,scale){
+    const name=String(p.name||'').trim();
+    // the exact characters of the name, so the canvas never falls back to a system font (ә, ғ, қ, ң, ө, ұ, ү, һ, і)
+    try{await document.fonts.load('700 100px '+HEAD,name)}catch(e){}
+    const bg=await loadImg(scale<.5?'/assets/img/certificate-bg-1200.jpg':'/assets/img/certificate-bg.jpg');
     const c=document.createElement('canvas');c.width=Math.round(W*scale);c.height=Math.round(H*scale);
-    const x=c.getContext('2d');x.scale(scale,scale); // drawn in 300 dpi page units at any size
-    const RED='#E1001B',INK='#0E0E0E',MUTED='#6E6860',LINE='#E6E1DA';
-    const fit=(s,weight,size,min,max,fam)=>{let f=size;x.font=weight+' '+f+'px '+fam;while(x.measureText(s).width>max&&f>min){f-=2;x.font=weight+' '+f+'px '+fam}return f};
-    // paper + frame
-    x.fillStyle='#F4F2EF';x.fillRect(0,0,W,H);
-    x.fillStyle='#fff';roundRect(x,90,90,W-180,H-180,40);x.fill();
-    x.strokeStyle=RED;x.lineWidth=10;roundRect(x,90,90,W-180,H-180,40);x.stroke();
-    x.strokeStyle=LINE;x.lineWidth=4;roundRect(x,130,130,W-260,H-260,26);x.stroke();
-    // golden (Fibonacci) spiral, unwinding from the inner card's bottom-right corner, clipped to the card
-    x.save();roundRect(x,130,130,W-260,H-260,26);x.clip();spiral(x,W-130,H-130,RED);x.restore();
-    // logo
-    if(logo){const lh=200,lw=logo.width*lh/logo.height;x.drawImage(logo,(W-lw)/2,240,lw,lh)}
-    x.textAlign='center';x.textBaseline='alphabetic';
-    x.fillStyle=MUTED;x.font='600 50px '+SANS;spaced(x,T.season,W/2,560,4);
-    x.fillStyle=INK;x.font='800 230px '+HEAD;x.fillText(T.t1,W/2,800);
-    x.fillStyle=RED;x.font='600 96px '+HEAD;x.fillText(T.t2,W/2,920);
-    let y=1060;
-    if(T.award){x.fillStyle=MUTED;x.font='500 56px '+SANS;x.fillText(T.award,W/2,y);y+=40}
-    // name, shrunk to fit; the red rule follows the name's width
-    x.fillStyle=INK;const fs=fit(p.name,700,150,70,W-700,HEAD);
-    y+=fs*0.95;x.fillText(p.name,W/2,y);
-    const nw=Math.min(Math.max(x.measureText(p.name).width+160,700),W-700);
-    x.strokeStyle=RED;x.lineWidth=6;x.beginPath();x.moveTo((W-nw)/2,y+60);x.lineTo((W+nw)/2,y+60);x.stroke();
-    y+=150;
-    if(sub){x.fillStyle=MUTED;fit(sub,600,56,34,W-800,SANS);x.fillText(sub,W/2,y);y+=110}
-    x.fillStyle=INK;x.font='500 62px '+SANS;
-    for(const line of T.body){fit(line,500,62,40,W-700,SANS);x.fillText(line,W/2,y);y+=86}
-    // score badge
-    const by=Math.max(y+30,1800),bw=760,bh=250;
-    x.fillStyle='#FCEBEC';roundRect(x,(W-bw)/2,by,bw,bh,36);x.fill();
-    x.fillStyle='#B00016';x.font='600 46px '+SANS;x.fillText(T.score,W/2,by+80);
-    x.fillStyle=RED;fit(T.pts(p.score),700,120,60,bw-80,HEAD);x.fillText(T.pts(p.score),W/2,by+205);
-    // bottom row: stage (left) and code (right) at the same 300 px margin; both kept clear of the centre block
-    const fy=H-300,side=720;
-    x.textAlign='left';
-    if(p.stage){x.fillStyle=MUTED;fit(T.stage,600,40,28,side,SANS);x.fillText(T.stage,300,fy);x.fillStyle=INK;fit(p.stage,700,54,30,side,SANS);x.fillText(p.stage,300,fy+70)}
-    x.textAlign='right';
-    if(p.code){x.fillStyle=MUTED;fit(T.code,600,40,28,side,SANS);x.fillText(T.code,W-300,fy);x.fillStyle=INK;x.font='700 54px '+SANS;x.fillText('№ '+p.code,W-300,fy+70)}
-    x.textAlign='center';
-    if(az){const ah=70,aw=az.width*ah/az.height;x.drawImage(az,(W-aw)/2,fy-40,aw,ah)}
-    x.fillStyle=MUTED;fit(T.rep,500,38,26,W-2*(300+side+40),SANS);x.fillText(T.rep,W/2,fy+90);
+    const x=c.getContext('2d');
+    x.drawImage(bg,0,0,c.width,c.height);
+    x.scale(scale,scale); // drawn in 300 dpi page units at any size
+    let f=NAME.size;x.font='700 '+f+'px '+HEAD;
+    while(x.measureText(name).width>NAME.max&&f>NAME.min){f-=2;x.font='700 '+f+'px '+HEAD}
+    x.textAlign='center';x.textBaseline='alphabetic';x.fillStyle=NAME.color;
+    // a name still too long at the smallest size is squeezed horizontally rather than cut
+    const w=x.measureText(name).width;
+    if(w>NAME.max){x.save();x.translate(NAME.cx,0);x.scale(NAME.max/w,1);x.fillText(name,0,NAME.line-40);x.restore()}
+    else x.fillText(name,NAME.cx,NAME.line-40);
     return c;
-  }
-  function roundRect(x,a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()}
-  function spaced(x,s,cx,y,gap){const w=[...s].reduce((n,ch)=>n+x.measureText(ch).width+gap,-gap);let p=cx-w/2;const al=x.textAlign;x.textAlign='left';for(const ch of s){x.fillText(ch,p,y);p+=x.measureText(ch).width+gap}x.textAlign=al}
-  function spiral(x,cx,cy,color){
-    // r = a·φ^(2θ/π); about 3½ turns, the outer arc sweeping ~700 px into the card
-    x.globalAlpha=.16;x.strokeStyle=color;x.lineWidth=6;x.beginPath();
-    const k=Math.log((1+Math.sqrt(5))/2)/(Math.PI/2);
-    for(let i=0,th=0;th<=5.6*Math.PI;th+=0.02,i++){const r=3*Math.exp(k*th),a=Math.PI+th;const px=cx+r*Math.cos(a),py=cy+r*Math.sin(a);i?x.lineTo(px,py):x.moveTo(px,py)}
-    x.stroke();x.globalAlpha=1;
   }
 
   async function canvasPdf(c){

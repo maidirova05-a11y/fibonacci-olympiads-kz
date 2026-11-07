@@ -52,7 +52,7 @@ Flow: `/results` → parent enters the e-mail → `request-password` mails a 6-d
 results (the answer is the same 200 for any address, so the page cannot be used to check who took part) → `login`
 (login = e-mail) accepts the account password or the code; signing in with the code makes it the account password and
 signs out other sessions → HttpOnly, SameSite=Strict cookie scoped to `/api/results` (7 days, HMAC-signed) → `me`
-returns the participants for that e-mail → the browser draws the certificate (canvas → PDF/PNG) → `change-password`
+returns the participants for that e-mail → the browser puts each name on the approved certificate design (canvas → PDF/PNG) → `change-password`
 (needs the current one; signs out other sessions) → `logout`.
 
 Protection: codes from the last three letters are accepted (mail apps group identical letters, so parents often type an earlier one); they live 48 h from the latest letter and share 10 tries, then they are deleted; requesting a code never changes the existing
