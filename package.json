@@ -4,7 +4,9 @@
   "description": "Static landing site; api/ holds Vercel serverless functions (see docs/BACKEND.md)",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "check": "node --check api/lead.js && npm test",
+    "check": "node --check api/lead.js && node --check api/_lib/results.js && node --check assets/results.js && npm test",
+    "dev": "node scripts/dev-server.mjs 3000",
+    "import-results": "node --env-file-if-exists=.env.local scripts/import-results.mjs",
     "version-assets": "node scripts/version-assets.mjs"
   }
 }

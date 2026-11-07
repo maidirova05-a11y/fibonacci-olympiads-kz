@@ -8,3 +8,5 @@
 /test
 /docs
 /package.json
+.data
+.env*

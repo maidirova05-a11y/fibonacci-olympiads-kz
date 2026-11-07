@@ -2,5 +2,6 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://fibonacci-olympiads.kz/</loc><lastmod>2026-10-24</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://fibonacci-olympiads.kz/oferta</loc><lastmod>2026-10-24</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://fibonacci-olympiads.kz/results</loc><lastmod>2026-11-07</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://fibonacci-olympiads.kz/polozhenie</loc><lastmod>2026-10-24</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
 </urlset>
