@@ -11,11 +11,12 @@ Same layout and rules in atlantia-olympiads-kz and fibonacci-olympiads-kz. Only 
 | `api/_lib/validate.js` | Input validation and sanitising (the only place that reads the request body fields) |
 | `api/_lib/env.js` | Env validation, loaded lazily, never logs values |
 | `api/_lib/bitrix.js` | The only module that talks to the CRM |
+| `api/_lib/leads-db.js` | Optional Postgres copy of every lead (off without `DATABASE_URL`) |
 | `api/_lib/ratelimit.js`, `http.js`, `log.js` | Shared helpers |
 | `api/_lib/site.js` | Per-site config |
 
 Files starting with `_` are not exposed as routes by Vercel. New endpoints: one file in `api/`, reuse `_lib`.
-There is no database. If one is added: pooled connection string from env, parameterised queries only, schema as migrations.
+Leads and the results cabinet need no database on Vercel (see the Docker section below for the self-hosted setup with Postgres). If one is added: pooled connection string from env, parameterised queries only, schema as migrations.
 
 ## Rules
 
@@ -61,7 +62,7 @@ requests cannot slip past): 10 per e-mail per 30 min, then `locked` — a fresh 
 account. Wrong "current password" in `change-password` counts against the same limit. The one-letter-per-minute slot is
 taken atomically (`SET NX EX`), the daily counter before sending. Logs carry an HMAC tag of the e-mail, never the address.
 All endpoints follow the rules above (POST only, Origin check = CSRF protection, JSON ≤ 4 KB). Code: `api/_lib/results.js`
-(flow), `auth.js` (scrypt hashes, sessions), `store.js` (Upstash Redis REST), `mailer.js` (Resend).
+(flow), `auth.js` (scrypt hashes, sessions), `store.js` (Upstash Redis REST; Postgres `kv` table when `DATABASE_URL` is set), `mailer.js` (Resend).
 
 Only e-mails from the «Почта» column of the results sheet get access; rows without it are skipped by the import and
 listed in its output. One e-mail may have several children. Stored per participant: code, name, score, grade, school,
@@ -92,4 +93,21 @@ results, account and pending code are deleted. Without the Upstash env the impor
 
 ## Tests
 
-`npm test` (Node 20+, no dependencies) runs `test/lead.test.js` and `test/results.test.js` with a mocked `fetch`, a temp-file store and a captured mailer; no real CRM, Redis or mail is called.
+`npm test` (Node 20+, no dependencies) runs `test/lead.test.js`, `test/leads-db.test.js` and `test/results.test.js` with a mocked `fetch`, a temp-file store (or Postgres with `TEST_DATABASE_URL`), a fake lead-DB pool and a captured mailer; no real CRM, Redis or mail is called.
+
+## Own server (Docker + Postgres)
+
+`docker compose up -d --build` (see `compose.yaml`): site + functions via `server/index.cjs` and a Postgres container; port `127.0.0.1:3107`,
+HTTPS and the public domain come from the reverse proxy (nginx/Caddy). Everything stays on your server (no Upstash, no Vercel).
+`DATABASE_URL` is set by `compose.yaml`; secrets go to `docker.env` (copy `docker.env.example`).
+
+- `server/migrate.cjs` applies `db/migrations/*.sql` in order, once each (`schema_migrations`), before the server starts. Schema changes = a new numbered file.
+- **Leads** (`001_leads.sql`, `leads-db.js`): a copy of every lead is saved before the CRM call, so it survives a CRM outage. Columns: name, phone, question, lang, page, referrer, utm, origin, `ip_hash` (12-char hash, never the address), `crm_status` (`pending` / `ok` / `failed`), `crm_id`, `crm_error`.
+  Parameterised queries only, 1.5 s timeout, errors logged by SQLSTATE code only. The response contract is unchanged (a failed CRM call still returns 502; the lead stays as `failed`).
+  Undelivered leads: `select id, created_at, name, phone, crm_error from leads where crm_status <> 'ok' order by id;`
+- **Results cabinet** (`002_kv.sql`, `store.js` → `pgStore`): the same six operations as the Redis store (`get`, `set`, `del`, `setnx`, `incr`, `ttl`) on table `kv(k, v, expires_at)`;
+  expired rows count as absent, `setnx`/`incr` are single atomic statements, the `incr` window is fixed from the first hit, `set` clears the TTL — exactly like Redis. Env: `RESULTS_SESSION_SECRET`, `RESEND_API_KEY`, `MAIL_FROM` (the letters are still sent by Resend).
+- Loading results into the container: `docker compose cp "Результаты.xlsx" app:/tmp/r.xlsx` then `docker compose exec app node scripts/import-results.mjs /tmp/r.xlsx` (add `--dry` first). It writes to Postgres because `DATABASE_URL` is set. With `azhost`: `cd /opt/apps/<name> && docker compose -p <name> exec app …`.
+- Moving data from Upstash Redis: re-run the import from the original results sheet (accounts/passwords are created again by parents via the e-mail code); nothing else needs migrating.
+- Personal data (children's names, scores, parents' e-mails, lead phones) lives only in this database: keep the server in Kazakhstan, restrict access, back it up (`azhost backup`), delete what is no longer needed and describe it in the privacy policy.
+- Tests on Postgres: `TEST_DATABASE_URL=postgres://… npm test` (apply `server/migrate.cjs` first) runs the whole results suite and `test/kv-pg.test.js` on the real store.

@@ -10,3 +10,13 @@
 /package.json
 .data
 .env*
+
+# Docker-версия и база — только для своего сервера, на Vercel не нужны
+/Dockerfile
+/compose.yaml
+/docker.env*
+/db
+/server
+/.dockerignore
+/package-lock.json
+/node_modules

@@ -10,3 +10,7 @@ Thumbs.db
 # local results-cabinet data (dev store, dev mail log, pulled env)
 .data
 .env*
+
+# Docker-версия: секреты и зависимости
+docker.env
+node_modules

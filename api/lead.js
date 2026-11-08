@@ -10,6 +10,7 @@ const { requestId, clientIp, hash, fail, applyCors } = require('./_lib/http');
 const { parseLead } = require('./_lib/validate');
 const limiter = require('./_lib/ratelimit');
 const { createLead } = require('./_lib/bitrix');
+const store = require('./_lib/leads-db');
 
 const MAX_BODY = 16 * 1024;
 const IP_LIMIT = [5, 10 * 60 * 1000]; // 5 requests / 10 min / address
@@ -72,9 +73,13 @@ async function handle(req, res, ctx) {
     return fail(res, 429, 'rate_limited', ctx.meta);
   }
 
+  // Optional DB copy first: the lead survives a CRM outage. No-op without DATABASE_URL; never throws.
+  const savedId = await store.saveLead(lead, { origin, ipHash: ctx.ip });
+
   const cfg = env.get();
   if (!cfg.ok) {
     log.error('invalid environment', { id: ctx.id, vars: cfg.invalid });
+    await store.markCrm(savedId, { ok: false, error: 'config' });
     return fail(res, 500, 'config', ctx.meta);
   }
 
@@ -82,10 +87,12 @@ async function handle(req, res, ctx) {
   try {
     const r = await createLead(cfg.config, lead);
     log.info('lead created', { id: ctx.id, ip: ctx.ip, crmId: r.id, lang: lead.lang, utmSource: lead.utm.UTM_SOURCE });
+    await store.markCrm(savedId, { ok: true, crmId: r.id });
     return res.status(200).json({ ok: true });
   } catch (e) {
     limiter.forget(phoneKey); // a failed attempt must not block the visitor's retry
     const timeout = e?.name === 'TimeoutError' || e?.name === 'AbortError';
+    await store.markCrm(savedId, { ok: false, error: timeout ? 'crm_timeout' : 'crm' });
     log.error('crm failed', { id: ctx.id, reason: String(e?.message || e).slice(0, 200), timeout, orphanContactId: e?.contactId });
     return fail(res, timeout ? 504 : 502, timeout ? 'crm_timeout' : 'crm', ctx.meta);
   }
