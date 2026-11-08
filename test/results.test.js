@@ -26,7 +26,9 @@ const H = {
 };
 
 const ORIGIN = 'https://fibonacci-olympiads.kz';
-let mails, db, cookie;
+let mails, db, cookie, pgPool;
+// TEST_DATABASE_URL=postgres://… npm test — the same suite on the Postgres store (own-server setup; needs db/migrations applied).
+const PG_URL = process.env.TEST_DATABASE_URL;
 
 function call(h, body, over = {}) {
   const req = {
@@ -52,8 +54,13 @@ function call(h, body, over = {}) {
 const lastPassword = () => mails.at(-1).letter.text.match(/(?:Пароль|Құпиясөз|Password): (\d{6})/)[1];
 
 test.beforeEach(async () => {
-  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'res-')), 'db.json');
-  db = store.fileStore(file);
+  if (PG_URL) {
+    pgPool ||= new (require('pg').Pool)({ connectionString: PG_URL });
+    await pgPool.query('TRUNCATE kv');
+    db = store.pgStore(pgPool);
+  } else {
+    db = store.fileStore(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'res-')), 'db.json'));
+  }
   store._set(db);
   limiter.reset();
   cookie = '';
@@ -283,3 +290,5 @@ test('an older single-code record is still accepted', async () => {
   await db.set(results.key.otp('parent@mail.ru'), JSON.stringify({ h: await auth.hashPassword('424242'), t: '' }));
   assert.equal((await call('login', { email: 'parent@mail.ru', password: '424242' })).status, 200);
 });
+
+test.after(async () => { if (pgPool) await pgPool.end(); });

@@ -1,0 +1,43 @@
+# Сайт целиком на своём сервере: сайт + функции (заявки, кабинет результатов) + собственная база Postgres.
+#
+#   cp docker.env.example docker.env   # и заполнить
+#   docker compose up -d --build
+#
+# Сайт слушает только 127.0.0.1:3107 — наружу его отдаёт nginx/Caddy с HTTPS.
+# База не публикуется наружу: к ней может подключиться только приложение.
+
+name: fibonacci
+
+services:
+  db:
+    image: postgres:${POSTGRES_MAJOR:-17}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  app:
+    build: .
+    image: fibonacci-app
+    restart: unless-stopped
+    env_file: docker.env
+    environment:
+      # Адрес базы задавать в docker.env НЕ нужно
+      DATABASE_URL: postgresql://app:app@db:5432/app
+    ports:
+      - "127.0.0.1:${APP_PORT:-3107}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:
